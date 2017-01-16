@@ -34,7 +34,7 @@ public class Helper {
         return this.inflector.humanize(input);
     }
 
-    public String plural(String input) {
+    public String pluralize(String input) {
         return this.inflector.pluralize(input);
     }
 

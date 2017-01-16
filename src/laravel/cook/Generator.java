@@ -1,6 +1,5 @@
 package laravel.cook;
 
-import cook.core.Cook;
 import cook.core.FreemarkerWrapper;
 import cook.core.ResultProcess;
 import laravel.database.DatabaseFactory;
@@ -12,8 +11,12 @@ import laravel.database.pojo.TableDesign;
 import laravel.utils.FileUtilPlugin;
 import laravel.utils.PrintUtilPlugin;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -30,9 +33,11 @@ public class Generator {
     public static final String N = "n";
     public static final String ENTER_A_NUMBER_FROM_THE_LIST_ABOVE_OR_Q_TO_EXIT = "Enter a number from the list above, or 'q' to exit: ";
     public static final String POSSIBLE_MODELS_BASED_ON_CURRENT_DATABASE_DEFINED_IN_FILE_ENV = "Possible Models based on current database defined in file \".env\"";
+    public static final String POSSIBLE_CONTROLLERS_BASED_ON_CURRENT_DATABASE_DEFINED_IN_FILE_ENV = "Possible Controllers based on current database defined in file \".env\"";
     public static final String INVALID_OPTION = "Invalid option";
     public static final String TABLE = "TABLE";
     public static final String MODEL_CREATED_SUCCESSFULLY = "Model created successfully!";
+    public static final String CONTROLLER_CREATED_SUCCESSFULLY = "Controller created successfully!";
     public static final String PLEASE_CONFIRM_THE_FOLLOWING_ASSOCIATIONS = "Please confirm the following associations:";
     public static final String BELONGS_TO = " belongsTo ";
     public static final String HAS_ONE = " hasOne ";
@@ -45,6 +50,9 @@ public class Generator {
     public static final String ALREADY_EXISTS_REPLACE_THE_EXISTING_FILE_Y_N = "\" already exists. Replace the existing file? (y/n)";
     public static final String PATH_APP = "app";
     public static final String PATH_MODEL = "Models";
+    public static final String CONTROLLER = "Controller";
+    private static final int BUILD_MODEL = 1;
+    private static final int BUILD_CONTROLLER = 2;
 
     private static Generator instance = null;
 
@@ -54,7 +62,7 @@ public class Generator {
 
     public static void main(String args[]) throws Exception {
         //Tests
-        Generator.getInstance("C:\\laravel_projects\\syslaravel\\").generatorModel();
+        Generator.getInstance("C:\\desenvolvimento\\laravel_projects\\syslaravel\\").buildController(true);
     }
 
     private Generator(){}
@@ -74,7 +82,7 @@ public class Generator {
         return instance;
     }
 
-    public ResultProcess generatorModel() {
+    public ResultProcess buildModel() {
         ResultProcess out = new ResultProcess();
         try {
             configureInflector();
@@ -84,15 +92,14 @@ public class Generator {
             //Model list
             int cont = 0;
             for(String table : tableList){
-                PrintUtilPlugin.printLineYellow("[" + (cont++) + "] " + this.modelize(table));
+                PrintUtilPlugin.printLineYellow("[" + (cont++) + "] " + this.getModelName(table));
             }
             String option = this.inputOptions(cont);
             String tableName = tableList.get(Integer.valueOf(option));
-            TableDesign tableDesign = getTableDesign(tableName);
+            TableDesign tableDesign = getTableDesign(tableName, BUILD_MODEL);
 
             //
-            String modelPath = pathProject + File.separator + PATH_APP + File.separator + PATH_MODEL + File.separator;
-            String fileName = modelPath + File.separator + this.modelize(tableDesign.getName()) + ".php";
+            String fileName = getFileNameModel(tableDesign.getName());
             Boolean generateFile = true;
             if(new File(fileName).exists()){
                 String[] simpleName = fileName.split(ESCAPE + File.separator);
@@ -113,6 +120,35 @@ public class Generator {
         return out;
     }
 
+    private String getFileNameModel(String name) {
+        String modelPath = pathProject + File.separator + PATH_APP + File.separator + PATH_MODEL + File.separator;
+        return modelPath + File.separator + this.getModelName(name) + ".php";
+    }
+
+    public ResultProcess buildController(Boolean resource) {
+        ResultProcess out = new ResultProcess();
+        try {
+            configureInflector();
+            List<String> tableList = getTableListWithModel();
+
+            PrintUtilPlugin.outn(POSSIBLE_CONTROLLERS_BASED_ON_CURRENT_DATABASE_DEFINED_IN_FILE_ENV);
+            //Controllers list
+            int cont = 0;
+            for(String table : tableList){
+                PrintUtilPlugin.printLineYellow("[" + (cont++) + "] " + this.getControllerName(table));
+            }
+            String option = this.inputOptions(cont);
+            String tableName = tableList.get(Integer.valueOf(option));
+            TableDesign tableDesign = getTableDesign(tableName, BUILD_CONTROLLER);
+
+            out.setResultProcess(ResultProcess.SUCESS, CONTROLLER_CREATED_SUCCESSFULLY);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            out.setResultProcess(ResultProcess.ERROR, "Erro, " + ex.getMessage());
+        }
+        return out;
+    }
+
     private void configureInflector() {
         PrintUtilPlugin.outn(LANGUAGE_NAME_IN_TABLE);
         PrintUtilPlugin.printLineYellow("[0] " + Inflector.EN);
@@ -124,48 +160,57 @@ public class Generator {
         }
     }
 
-    private TableDesign getTableDesign(String tableName) throws Exception {
+    private TableDesign getTableDesign(String tableName, int buildType) throws Exception {
         String option = null;
         TableDesign tableDesign = new TableDesign(tableName);
         tableDesign.setAttributeList(getAttributeList(tableName));
-        PrintUtilPlugin.outn(PLEASE_CONFIRM_THE_FOLLOWING_ASSOCIATIONS);
-        //ManyToOneList
-        for(ForeingKey fk : this.getManyToOneList(tableName)){
-            PrintUtilPlugin.printLineYellowGreenYellow(this.modelize(tableName), BELONGS_TO, this.modelize(fk.getTableName())+"? (y/n)");
-            if(this.inputConfirm(Y)){
-                tableDesign.getManyToOneList().add(fk);
+        if(buildType == BUILD_MODEL) {
+            PrintUtilPlugin.outn(PLEASE_CONFIRM_THE_FOLLOWING_ASSOCIATIONS);
+            //ManyToOneList
+            for (ForeingKey fk : this.getManyToOneList(tableName)) {
+                PrintUtilPlugin.printLineYellowGreenYellow(this.getModelName(tableName), BELONGS_TO, this.getModelName(fk.getTableName()) + "? (y/n)");
+                if (this.inputConfirm(Y)) {
+                    tableDesign.getManyToOneList().add(fk);
+                }
             }
-        }
 
-        //OneToManyList
-        for(ForeingKey fk : this.getOneToManyAndManyToManyList(tableName)){
-            if(fk.getManyToOne() != null) {
-                PrintUtilPlugin.printLineYellowGreenYellow("[0] " + this.modelize(tableName), HAS_AND_BELONGS_TO_MANY, this.modelize(fk.getManyToOne().getTableName()));
-                PrintUtilPlugin.printLineYellowGreenYellow("[1] " + this.modelize(tableName), HAS_MANY, this.modelize(fk.getTableName()));
-                PrintUtilPlugin.printLineYellow("[2] " + NONE);
-                option = this.inputOptions(3);
-                if(Integer.valueOf(option) == 0){
-                    tableDesign.getManyToManyList().add(fk);
-                }else if(Integer.valueOf(option) == 1){
-                    tableDesign.getOneToManyList().add(fk);
-                }
-            }else{
-                PrintUtilPlugin.printLineYellowGreenYellow("[0] " + this.modelize(tableName), HAS_MANY, this.modelize(fk.getTableName()));
-                PrintUtilPlugin.printLineYellowGreenYellow("[1] " + this.modelize(tableName), HAS_ONE, this.modelize(fk.getTableName()));
-                PrintUtilPlugin.printLineYellow("[2] " + NONE);
-                option = this.inputOptions(3);
-                if(Integer.valueOf(option) == 0){
-                    tableDesign.getOneToManyList().add(fk);
-                }else if(Integer.valueOf(option) == 1){
-                    tableDesign.getOneToOneList().add(fk);
+            //OneToManyList
+            for (ForeingKey fk : this.getOneToManyAndManyToManyList(tableName)) {
+                if (fk.getManyToOne() != null) {
+                    PrintUtilPlugin.printLineYellowGreenYellow("[0] " + this.getModelName(tableName), HAS_AND_BELONGS_TO_MANY, this.getModelName(fk.getManyToOne().getTableName()));
+                    PrintUtilPlugin.printLineYellowGreenYellow("[1] " + this.getModelName(tableName), HAS_MANY, this.getModelName(fk.getTableName()));
+                    PrintUtilPlugin.printLineYellow("[2] " + NONE);
+                    option = this.inputOptions(3);
+                    if (Integer.valueOf(option) == 0) {
+                        tableDesign.getManyToManyList().add(fk);
+                    } else if (Integer.valueOf(option) == 1) {
+                        tableDesign.getOneToManyList().add(fk);
+                    }
+                } else {
+                    PrintUtilPlugin.printLineYellowGreenYellow("[0] " + this.getModelName(tableName), HAS_MANY, this.getModelName(fk.getTableName()));
+                    PrintUtilPlugin.printLineYellowGreenYellow("[1] " + this.getModelName(tableName), HAS_ONE, this.getModelName(fk.getTableName()));
+                    PrintUtilPlugin.printLineYellow("[2] " + NONE);
+                    option = this.inputOptions(3);
+                    if (Integer.valueOf(option) == 0) {
+                        tableDesign.getOneToManyList().add(fk);
+                    } else if (Integer.valueOf(option) == 1) {
+                        tableDesign.getOneToOneList().add(fk);
+                    }
                 }
             }
+        }else{
+            String modelContent = readFile(getFileNameModel(tableName));
+            System.out.println(modelContent);
         }
         return tableDesign;
     }
 
-    private String modelize(String input) {
+    private String getModelName(String input) {
         return Helper.getInstance().modelize(input);
+    }
+
+    private String getControllerName(String input) {
+        return Helper.getInstance().pluralize(this.getModelName(input)) + CONTROLLER;
     }
 
     private String inputOptions(int numberMaxOptions) {
@@ -209,7 +254,7 @@ public class Generator {
         return value.matches("[0-9]+");
     }
 
-    public List<String> getTableList() throws SQLException, ClassNotFoundException {
+    private List<String> getTableList() throws SQLException, ClassNotFoundException {
         List<String> tableList = new ArrayList<String>();
         //Open connection
         this.database.openConnection();
@@ -217,7 +262,6 @@ public class Generator {
         ResultSet rs = database.getConnection().getMetaData().getTables(null, null, "%", new String[]{TABLE});
         try {
             while (rs.next()) {
-                //ResultSetMetaData teste = rs.getMetaData();
                 tableList.add(rs.getString(DatabaseFactory.TABLE_NAME));
             }
         }finally {
@@ -228,7 +272,33 @@ public class Generator {
         return tableList;
     }
 
-    public List<Attribute> getAttributeList(String tableName) throws SQLException, ClassNotFoundException {
+    private List<String> getTableListWithModel() throws Exception {
+        List<String> tableList = new ArrayList<String>();
+        List<String> tableListTmp = new ArrayList<String>();
+        //Open connection
+        this.database.openConnection();
+        //List tables
+        ResultSet rs = database.getConnection().getMetaData().getTables(null, null, "%", new String[]{TABLE});
+        try {
+            while (rs.next()) {
+                tableListTmp.add(rs.getString(DatabaseFactory.TABLE_NAME));
+            }
+        }finally {
+            rs.close();
+            //Close connection
+            this.database.closeConnection();
+        }
+
+        for(String tableName : tableListTmp){
+            if(new File(getFileNameModel(tableName)).exists()) {
+                tableList.add(tableName);
+            }
+        }
+
+        return tableList;
+    }
+
+    private List<Attribute> getAttributeList(String tableName) throws SQLException, ClassNotFoundException {
         Attribute primaryKey = getPrimaryKey(tableName);
         List<Attribute> attributeList = new ArrayList<Attribute>();
         //Open connection
@@ -270,7 +340,7 @@ public class Generator {
         return primaryKey;
     }
 
-    public List<ForeingKey> getManyToOneList(String tableName) throws SQLException, ClassNotFoundException {
+    private List<ForeingKey> getManyToOneList(String tableName) throws SQLException, ClassNotFoundException {
         List<ForeingKey> manyToOneList = new ArrayList<ForeingKey>();
         //Open connection
         this.database.openConnection();
@@ -288,7 +358,7 @@ public class Generator {
     }
 
 
-    public List<ForeingKey> getOneToManyAndManyToManyList(String tableName) throws SQLException, ClassNotFoundException {
+    private List<ForeingKey> getOneToManyAndManyToManyList(String tableName) throws SQLException, ClassNotFoundException {
         List<ForeingKey> oneToManyList = new ArrayList<ForeingKey>();
         //Open connection
         this.database.openConnection();
@@ -321,6 +391,10 @@ public class Generator {
             this.database.closeConnection();
         }
         return oneToManyList;
+    }
+
+    private String readFile(String filename) throws Exception{
+        return new String(Files.readAllBytes(Paths.get(filename)));
     }
 
 }

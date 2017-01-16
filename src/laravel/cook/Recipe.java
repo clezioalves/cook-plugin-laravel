@@ -14,7 +14,7 @@ import java.io.IOException;
 public class Recipe implements IFCook {
 
     public static final String MODEL = "model";
-    public static final String CONTROLLER = "controller";
+    public static final String CONTROLLER_RESOURCE = "controller-resource";
     public static final String VIEW = "view";
     public static final String ARTISAN_FILE = "artisan";
 
@@ -48,7 +48,7 @@ public class Recipe implements IFCook {
         PrintUtil.outn("Available actions:");
         PrintUtil.outn("~~~~~~~~~~~~~~~~~~");
         PrintUtil.outn(MODEL);
-        PrintUtil.outn(CONTROLLER);
+        PrintUtil.outn(CONTROLLER_RESOURCE);
         PrintUtil.outn(VIEW);
     }
 
@@ -61,7 +61,7 @@ public class Recipe implements IFCook {
             return false;
         }
         if(!(param[1].toLowerCase().equals(MODEL) ||
-                param[1].toLowerCase().equals(CONTROLLER) ||
+                param[1].toLowerCase().equals(CONTROLLER_RESOURCE) ||
                 param[1].toLowerCase().equals(VIEW))){
             printHelp();
             PrintUtil.outn("");
@@ -100,19 +100,18 @@ public class Recipe implements IFCook {
     @Override
     public ResultProcess cook() {
         ResultProcess outn = new ResultProcess();
-        if (this.action.equals(MODEL)) {
-            try {
-                outn = Generator.getInstance(this.path).generatorModel();
-            } catch (IOException e) {
-                e.printStackTrace();
+        try {
+            if (this.action.equals(MODEL)) {
+                outn = Generator.getInstance(this.path).buildModel();
+            }else if (this.action.equals(CONTROLLER_RESOURCE)) {
+                outn = Generator.getInstance(this.path).buildController(Boolean.TRUE);
+            } else if (this.action.equals(VIEW)) {
+                //outn = PlayGerador.getPlayGerador().criaView(PATH_OUT_MODEL, PATH_OUT);
+            } else {
+                outn.setResultProcess(ResultProcess.ERROR, "Action not found");
             }
-        }else if (this.action.equals(CONTROLLER)) {
-            //ArquivosPlay.getArquivoPlay().copiaArquivosPlay(this.PATH_ARQUIVOS);
-            //outn = PlayGerador.getPlayGerador().criaController(PATH_OUT_MODEL, PATH_OUT);
-        } else if (this.action.equals(VIEW)) {
-            //outn = PlayGerador.getPlayGerador().criaView(PATH_OUT_MODEL, PATH_OUT);
-        } else {
-            outn.setResultProcess(ResultProcess.ERROR, "Action not found");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         return outn;
     }
