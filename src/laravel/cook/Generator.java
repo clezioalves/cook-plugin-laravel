@@ -7,13 +7,12 @@ import laravel.database.IDatabase;
 import laravel.database.ResourceUtil;
 import laravel.database.pojo.Attribute;
 import laravel.database.pojo.ForeingKey;
+import laravel.database.pojo.ModelDesign;
 import laravel.database.pojo.TableDesign;
 import laravel.utils.FileUtilPlugin;
 import laravel.utils.PrintUtilPlugin;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -21,6 +20,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by clezio on 08/08/16.
@@ -39,10 +40,10 @@ public class Generator {
     public static final String MODEL_CREATED_SUCCESSFULLY = "Model created successfully!";
     public static final String CONTROLLER_CREATED_SUCCESSFULLY = "Controller created successfully!";
     public static final String PLEASE_CONFIRM_THE_FOLLOWING_ASSOCIATIONS = "Please confirm the following associations:";
-    public static final String BELONGS_TO = " belongsTo ";
-    public static final String HAS_ONE = " hasOne ";
-    public static final String HAS_MANY = " hasMany ";
-    public static final String HAS_AND_BELONGS_TO_MANY = " hasAndBelongsToMany ";
+    public static final String BELONGS_TO_LABEL = " belongsTo ";
+    public static final String HAS_ONE_LABEL = " hasOne ";
+    public static final String HAS_MANY_LABEL = " hasMany ";
+    public static final String HAS_AND_BELONGS_TO_MANY_LABEL = " hasAndBelongsToMany ";
     public static final String NONE = "None";
     public static final String LANGUAGE_NAME_IN_TABLE = "Language name in table?";
     public static final String ESCAPE = "\\";
@@ -51,8 +52,11 @@ public class Generator {
     public static final String PATH_APP = "app";
     public static final String PATH_MODEL = "Models";
     public static final String CONTROLLER = "Controller";
-    private static final int BUILD_MODEL = 1;
-    private static final int BUILD_CONTROLLER = 2;
+    public static final String REGEX_EXTRACT_RELATIONSHIPS = ".*->(\\w+)\\('(.*\\\\([^\\.]+))'\\);";
+    public static final String BELONGS_TO = "belongsTo";
+    public static final String BELONGS_TO_MANY = "belongsToMany";
+    public static final String HAS_ONE = "hasOne";
+    public static final String HAS_MANY = "hasMany";
 
     private static Generator instance = null;
 
@@ -62,7 +66,13 @@ public class Generator {
 
     public static void main(String args[]) throws Exception {
         //Tests
-        Generator.getInstance("C:\\desenvolvimento\\laravel_projects\\syslaravel\\").buildController(true);
+        //Generator.getInstance("C:\\desenvolvimento\\laravel_projects\\syslaravel\\").buildController(true);
+        String modelContent = Generator.getInstance("C:\\desenvolvimento\\laravel_projects\\syslaravel\\").readFile("C:\\desenvolvimento\\laravel_projects\\syslaravel\\app\\Models\\Analista.php");
+        Pattern p = Pattern.compile(".*->(\\w+)\\('(.*\\\\([^\\.]+))'\\);");
+        Matcher m = p.matcher(modelContent);
+        while (m.find()) {
+            System.out.println("######### Relacionamento: "+m.group(1) + " Model: "+m.group(3));
+        }
     }
 
     private Generator(){}
@@ -96,7 +106,7 @@ public class Generator {
             }
             String option = this.inputOptions(cont);
             String tableName = tableList.get(Integer.valueOf(option));
-            TableDesign tableDesign = getTableDesign(tableName, BUILD_MODEL);
+            TableDesign tableDesign = getTableDesign(tableName);
 
             //
             String fileName = getFileNameModel(tableDesign.getName());
@@ -139,7 +149,8 @@ public class Generator {
             }
             String option = this.inputOptions(cont);
             String tableName = tableList.get(Integer.valueOf(option));
-            TableDesign tableDesign = getTableDesign(tableName, BUILD_CONTROLLER);
+            ModelDesign modelDesign = getModelDesign(tableName);
+
 
             out.setResultProcess(ResultProcess.SUCESS, CONTROLLER_CREATED_SUCCESSFULLY);
         } catch (Exception ex) {
@@ -160,49 +171,68 @@ public class Generator {
         }
     }
 
-    private TableDesign getTableDesign(String tableName, int buildType) throws Exception {
+    private TableDesign getTableDesign(String tableName) throws Exception {
         String option = null;
         TableDesign tableDesign = new TableDesign(tableName);
         tableDesign.setAttributeList(getAttributeList(tableName));
-        if(buildType == BUILD_MODEL) {
-            PrintUtilPlugin.outn(PLEASE_CONFIRM_THE_FOLLOWING_ASSOCIATIONS);
-            //ManyToOneList
-            for (ForeingKey fk : this.getManyToOneList(tableName)) {
-                PrintUtilPlugin.printLineYellowGreenYellow(this.getModelName(tableName), BELONGS_TO, this.getModelName(fk.getTableName()) + "? (y/n)");
-                if (this.inputConfirm(Y)) {
-                    tableDesign.getManyToOneList().add(fk);
-                }
+        PrintUtilPlugin.outn(PLEASE_CONFIRM_THE_FOLLOWING_ASSOCIATIONS);
+        //ManyToOneList
+        for (ForeingKey fk : this.getManyToOneList(tableName)) {
+            PrintUtilPlugin.printLineYellowGreenYellow(this.getModelName(tableName), BELONGS_TO_LABEL, this.getModelName(fk.getTableName()) + "? (y/n)");
+            if (this.inputConfirm(Y)) {
+                tableDesign.getManyToOneList().add(fk);
             }
+        }
 
-            //OneToManyList
-            for (ForeingKey fk : this.getOneToManyAndManyToManyList(tableName)) {
-                if (fk.getManyToOne() != null) {
-                    PrintUtilPlugin.printLineYellowGreenYellow("[0] " + this.getModelName(tableName), HAS_AND_BELONGS_TO_MANY, this.getModelName(fk.getManyToOne().getTableName()));
-                    PrintUtilPlugin.printLineYellowGreenYellow("[1] " + this.getModelName(tableName), HAS_MANY, this.getModelName(fk.getTableName()));
-                    PrintUtilPlugin.printLineYellow("[2] " + NONE);
-                    option = this.inputOptions(3);
-                    if (Integer.valueOf(option) == 0) {
-                        tableDesign.getManyToManyList().add(fk);
-                    } else if (Integer.valueOf(option) == 1) {
-                        tableDesign.getOneToManyList().add(fk);
-                    }
-                } else {
-                    PrintUtilPlugin.printLineYellowGreenYellow("[0] " + this.getModelName(tableName), HAS_MANY, this.getModelName(fk.getTableName()));
-                    PrintUtilPlugin.printLineYellowGreenYellow("[1] " + this.getModelName(tableName), HAS_ONE, this.getModelName(fk.getTableName()));
-                    PrintUtilPlugin.printLineYellow("[2] " + NONE);
-                    option = this.inputOptions(3);
-                    if (Integer.valueOf(option) == 0) {
-                        tableDesign.getOneToManyList().add(fk);
-                    } else if (Integer.valueOf(option) == 1) {
-                        tableDesign.getOneToOneList().add(fk);
-                    }
+        //OneToManyList
+        for (ForeingKey fk : this.getOneToManyAndManyToManyList(tableName)) {
+            if (fk.getManyToOne() != null) {
+                PrintUtilPlugin.printLineYellowGreenYellow("[0] " + this.getModelName(tableName), HAS_AND_BELONGS_TO_MANY_LABEL, this.getModelName(fk.getManyToOne().getTableName()));
+                PrintUtilPlugin.printLineYellowGreenYellow("[1] " + this.getModelName(tableName), HAS_MANY_LABEL, this.getModelName(fk.getTableName()));
+                PrintUtilPlugin.printLineYellow("[2] " + NONE);
+                option = this.inputOptions(3);
+                if (Integer.valueOf(option) == 0) {
+                    tableDesign.getManyToManyList().add(fk);
+                } else if (Integer.valueOf(option) == 1) {
+                    tableDesign.getOneToManyList().add(fk);
+                }
+            } else {
+                PrintUtilPlugin.printLineYellowGreenYellow("[0] " + this.getModelName(tableName), HAS_MANY_LABEL, this.getModelName(fk.getTableName()));
+                PrintUtilPlugin.printLineYellowGreenYellow("[1] " + this.getModelName(tableName), HAS_ONE_LABEL, this.getModelName(fk.getTableName()));
+                PrintUtilPlugin.printLineYellow("[2] " + NONE);
+                option = this.inputOptions(3);
+                if (Integer.valueOf(option) == 0) {
+                    tableDesign.getOneToManyList().add(fk);
+                } else if (Integer.valueOf(option) == 1) {
+                    tableDesign.getOneToOneList().add(fk);
                 }
             }
-        }else{
-            String modelContent = readFile(getFileNameModel(tableName));
-            System.out.println(modelContent);
         }
         return tableDesign;
+    }
+
+    private ModelDesign getModelDesign(String tableName) throws Exception {
+        ModelDesign modelDesign = new ModelDesign(getModelName(tableName));
+        modelDesign.setAttributeList(getAttributeList(tableName));
+        String modelContent = readFile(getFileNameModel(tableName));
+        Pattern p = Pattern.compile(REGEX_EXTRACT_RELATIONSHIPS);
+        Matcher m = p.matcher(modelContent);
+        while (m.find()) {
+            String relationType = m.group(1);
+            String simpleNameModel = m.group(3);
+            if(BELONGS_TO.equals(relationType)){
+                modelDesign.getOneToManyList().add(new ModelDesign(simpleNameModel));
+            }else if(BELONGS_TO_MANY.equals(relationType)){
+                modelDesign.getManyToManyList().add(new ModelDesign(simpleNameModel));
+            }else if(HAS_ONE.equals(relationType)){
+                modelDesign.getOneToOneList().add(new ModelDesign(simpleNameModel));
+            }else if(HAS_MANY.equals(relationType)){
+                modelDesign.getManyToOneList().add(new ModelDesign(simpleNameModel));
+            }else{
+                continue;
+            }
+        }
+        return modelDesign;
     }
 
     private String getModelName(String input) {
