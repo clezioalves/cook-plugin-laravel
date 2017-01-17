@@ -1,5 +1,7 @@
 package laravel.database.pojo;
 
+import laravel.cook.Helper;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -75,5 +77,13 @@ public class ModelDesign {
 
     public void setManyToManyList(List<ModelDesign> manyToManyList) {
         this.manyToManyList = manyToManyList;
+    }
+
+    public String getControllerName(){
+        return Helper.getInstance().pluralize(this.getModelName())+"Controller";
+    }
+
+    public String getModelNameVariable(){
+        return this.getModelName().toLowerCase();
     }
 }

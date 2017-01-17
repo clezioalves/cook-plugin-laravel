@@ -19,7 +19,9 @@ import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,6 +41,7 @@ public class Generator {
     public static final String TABLE = "TABLE";
     public static final String MODEL_CREATED_SUCCESSFULLY = "Model created successfully!";
     public static final String CONTROLLER_CREATED_SUCCESSFULLY = "Controller created successfully!";
+    public static final String OPERATION_CANCELED = "Operation canceled!";
     public static final String PLEASE_CONFIRM_THE_FOLLOWING_ASSOCIATIONS = "Please confirm the following associations:";
     public static final String BELONGS_TO_LABEL = " belongsTo ";
     public static final String HAS_ONE_LABEL = " hasOne ";
@@ -51,12 +54,15 @@ public class Generator {
     public static final String ALREADY_EXISTS_REPLACE_THE_EXISTING_FILE_Y_N = "\" already exists. Replace the existing file? (y/n)";
     public static final String PATH_APP = "app";
     public static final String PATH_MODEL = "Models";
+    public static final String PATH_CONTROLLER = "Http//Controllers";
     public static final String CONTROLLER = "Controller";
     public static final String REGEX_EXTRACT_RELATIONSHIPS = ".*->(\\w+)\\('(.*\\\\([^\\.]+))'\\);";
     public static final String BELONGS_TO = "belongsTo";
     public static final String BELONGS_TO_MANY = "belongsToMany";
     public static final String HAS_ONE = "hasOne";
     public static final String HAS_MANY = "hasMany";
+    public static final String CREATED_AT = "created_at";
+    public static final String UPDATED_AT = "updated_at";
 
     private static Generator instance = null;
 
@@ -66,13 +72,7 @@ public class Generator {
 
     public static void main(String args[]) throws Exception {
         //Tests
-        //Generator.getInstance("C:\\desenvolvimento\\laravel_projects\\syslaravel\\").buildController(true);
-        String modelContent = Generator.getInstance("C:\\desenvolvimento\\laravel_projects\\syslaravel\\").readFile("C:\\desenvolvimento\\laravel_projects\\syslaravel\\app\\Models\\Analista.php");
-        Pattern p = Pattern.compile(".*->(\\w+)\\('(.*\\\\([^\\.]+))'\\);");
-        Matcher m = p.matcher(modelContent);
-        while (m.find()) {
-            System.out.println("######### Relacionamento: "+m.group(1) + " Model: "+m.group(3));
-        }
+        Generator.getInstance("C:\\laravel_projects\\syslaravel\\").buildController(true);
     }
 
     private Generator(){}
@@ -110,29 +110,21 @@ public class Generator {
 
             //
             String fileName = getFileNameModel(tableDesign.getName());
-            Boolean generateFile = true;
-            if(new File(fileName).exists()){
-                String[] simpleName = fileName.split(ESCAPE + File.separator);
-                PrintUtilPlugin.printLineYellowGreenYellow(THE_FILENAME, simpleName[simpleName.length-1], ALREADY_EXISTS_REPLACE_THE_EXISTING_FILE_Y_N);
-                generateFile = this.inputConfirm(N);
-            }
+            Boolean generateFile = checkFileExists(fileName);
             if(generateFile) {
                 FreemarkerWrapper.getInstance().addVar("tableDesign", tableDesign);
                 String arq = FreemarkerWrapper.getInstance().parseTemplate("model.ftl");
                 FileUtilPlugin.saveToPath(fileName, arq);
+                out.setResultProcess(ResultProcess.SUCESS, MODEL_CREATED_SUCCESSFULLY);
+            }else{
+                out.setResultProcess(ResultProcess.WARNING, OPERATION_CANCELED);
             }
 
-            out.setResultProcess(ResultProcess.SUCESS, MODEL_CREATED_SUCCESSFULLY);
         } catch (Exception ex) {
             ex.printStackTrace();
             out.setResultProcess(ResultProcess.ERROR, "Erro, " + ex.getMessage());
         }
         return out;
-    }
-
-    private String getFileNameModel(String name) {
-        String modelPath = pathProject + File.separator + PATH_APP + File.separator + PATH_MODEL + File.separator;
-        return modelPath + File.separator + this.getModelName(name) + ".php";
     }
 
     public ResultProcess buildController(Boolean resource) {
@@ -151,13 +143,42 @@ public class Generator {
             String tableName = tableList.get(Integer.valueOf(option));
             ModelDesign modelDesign = getModelDesign(tableName);
 
+            String fileName = getFileNameController(tableName);
+            Boolean generateFile = checkFileExists(fileName);
+            if(generateFile) {
+                FreemarkerWrapper.getInstance().addVar("modelDesign", modelDesign);
+                String arq = FreemarkerWrapper.getInstance().parseTemplate("controller-resource.ftl");
+                FileUtilPlugin.saveToPath(fileName, arq);
+                out.setResultProcess(ResultProcess.SUCESS, CONTROLLER_CREATED_SUCCESSFULLY);
+            }else{
+                out.setResultProcess(ResultProcess.WARNING, OPERATION_CANCELED);
+            }
 
-            out.setResultProcess(ResultProcess.SUCESS, CONTROLLER_CREATED_SUCCESSFULLY);
         } catch (Exception ex) {
             ex.printStackTrace();
             out.setResultProcess(ResultProcess.ERROR, "Erro, " + ex.getMessage());
         }
         return out;
+    }
+
+    private Boolean checkFileExists(String fileName) {
+        Boolean generateFile = true;
+        if(new File(fileName).exists()){
+            String[] simpleName = fileName.split(ESCAPE + File.separator);
+            PrintUtilPlugin.printLineYellowGreenYellow(THE_FILENAME, simpleName[simpleName.length-1], ALREADY_EXISTS_REPLACE_THE_EXISTING_FILE_Y_N);
+            generateFile = this.inputConfirm(N);
+        }
+        return generateFile;
+    }
+
+    private String getFileNameModel(String name) {
+        String modelPath = pathProject + File.separator + PATH_APP + File.separator + PATH_MODEL + File.separator;
+        return modelPath + File.separator + this.getModelName(name) + ".php";
+    }
+
+    private String getFileNameController(String name) {
+        String controllerPath = pathProject + File.separator + PATH_APP + File.separator + PATH_CONTROLLER + File.separator;
+        return controllerPath + File.separator + this.getControllerName(name) + ".php";
     }
 
     private void configureInflector() {
@@ -213,7 +234,7 @@ public class Generator {
 
     private ModelDesign getModelDesign(String tableName) throws Exception {
         ModelDesign modelDesign = new ModelDesign(getModelName(tableName));
-        modelDesign.setAttributeList(getAttributeList(tableName));
+        modelDesign.setAttributeList(getAttributeControllerList(tableName));
         String modelContent = readFile(getFileNameModel(tableName));
         Pattern p = Pattern.compile(REGEX_EXTRACT_RELATIONSHIPS);
         Matcher m = p.matcher(modelContent);
@@ -349,6 +370,33 @@ public class Generator {
             //Close connection
             this.database.closeConnection();
         }
+        return attributeList;
+    }
+
+    private List<Attribute> getAttributeControllerList(String tableName) throws SQLException, ClassNotFoundException {
+        List<Attribute> attributeList = getAttributeList(tableName);
+        Set<Attribute> attributeListRemove = new HashSet();
+        for (ForeingKey fk : this.getManyToOneList(tableName)) {
+            for(Attribute attribute : attributeList){
+                if(fk.getColumnName().equals(attribute.getName())){
+                    attributeListRemove.add(attribute);
+                }
+            }
+        }
+        for (ForeingKey fk : this.getOneToManyAndManyToManyList(tableName)){
+            for(Attribute attribute : attributeList){
+                if(fk.getColumnName().equals(attribute.getName())){
+                    attributeListRemove.add(attribute);
+                }
+            }
+        }
+        for(Attribute attribute : attributeList){
+            if(attribute.getPrimaryKey() || CREATED_AT.equals(attribute.getName()) ||
+                    UPDATED_AT.equals(attribute.getName())){
+                attributeListRemove.add(attribute);
+            }
+        }
+        attributeList.removeAll(attributeListRemove);
         return attributeList;
     }
 

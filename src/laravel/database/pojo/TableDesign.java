@@ -98,16 +98,6 @@ public class TableDesign {
         return null;
     }
 
-    /*public List<Attribute> getRequiredAttributeList(){
-        List<Attribute> requiredAttributeName = new ArrayList<Attribute>();
-        for(Attribute attribute : this.getAttributeList()){
-            if(attribute.getRequired() && !attribute.getPrimaryKey()){
-                requiredAttributeName.add(attribute);
-            }
-        }
-        return requiredAttributeName;
-    }*/
-
     public String getNameModelize(){
         return Helper.getInstance().modelize(this.getName());
     }

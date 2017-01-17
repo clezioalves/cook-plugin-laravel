@@ -8,19 +8,23 @@ class ${tableDesign.getNameModelize()} extends Model {
 
     protected $table = '${tableDesign.getName()}';
     
-    <#if tableDesign.getRuleAttributeNameList()?size != 0>
     public static $rulesInsert = array(
+        //'field' => 'required|max:50',
+    <#if tableDesign.getRuleAttributeNameList()?size != 0>
         <#list tableDesign.getRuleAttributeNameList() as ruleAttributeName>
         '${ruleAttributeName.getAttributeName()}' => '${ruleAttributeName.getRules()}',
         </#list>
+    </#if>
     );
 
     public static $rulesUpdate = array(
+        //'field' => 'required|max:50',
+    <#if tableDesign.getRuleAttributeNameList()?size != 0>
         <#list tableDesign.getRuleAttributeNameList() as ruleAttributeName>
         '${ruleAttributeName.getAttributeName()}' => '${ruleAttributeName.getRules()}',
         </#list>
-    );
     </#if>
+    );
 
     <#list tableDesign.getManyToOneList() as attr>
     /**
