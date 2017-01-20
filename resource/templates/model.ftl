@@ -7,7 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class ${tableDesign.getNameModelize()} extends Model {
 
     protected $table = '${tableDesign.getName()}';
-    
+
+    <#if !tableDesign.getTimestamps()>
+    public $timestamps = false;
+    </#if>
+
     public static $rulesInsert = array(
         //'field' => 'required|max:50',
     <#if tableDesign.getRuleAttributeNameList()?size != 0>

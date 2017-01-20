@@ -10,9 +10,12 @@ import java.util.List;
  */
 public class TableDesign {
 
+    public static final String CREATED_AT = "created_at";
+    public static final String UPDATED_AT = "updated_at";
+
     private String name;
 
-    private String displayField;
+    private Boolean timestamps;
 
     private List<Attribute> attributeList;
 
@@ -39,14 +42,6 @@ public class TableDesign {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getDisplayField() {
-        return displayField;
-    }
-
-    public void setDisplayField(String displayField) {
-        this.displayField = displayField;
     }
 
     public List<Attribute> getAttributeList() {
@@ -89,6 +84,14 @@ public class TableDesign {
         this.oneToOneList = oneToOneList;
     }
 
+    public Boolean getTimestamps() {
+        return timestamps;
+    }
+
+    public void setTimestamps(Boolean timestamps) {
+        this.timestamps = timestamps;
+    }
+
     public Attribute getPrimaryKey(){
         for(Attribute attribute: this.getAttributeList()){
             if(attribute.getPrimaryKey()){
@@ -109,6 +112,9 @@ public class TableDesign {
     public List<RuleAttributeName> getRuleAttributeNameList() {
         List<RuleAttributeName> attributeNameList = new ArrayList<RuleAttributeName>();
         for(Attribute attribute : this.getAttributeList()){
+            if(attribute.getName().equals(CREATED_AT) || attribute.getName().equals(UPDATED_AT)){
+                continue;
+            }
             StringBuilder rules = new StringBuilder();
             String attributeName = null;
             ForeingKey foreingKey = this.getForeingKeyByNameColumn(attribute.getName());

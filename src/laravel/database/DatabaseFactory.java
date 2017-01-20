@@ -1,5 +1,7 @@
 package laravel.database;
 
+import java.sql.ResultSet;
+
 /**
  * Created by clezio on 12/08/16.
  */
@@ -14,8 +16,6 @@ public class DatabaseFactory {
     public static final String COLUMN_SIZE = "COLUMN_SIZE";
 
     public static final String NULLABLE = "NULLABLE";
-
-    public static final String PKCOLUMN_NAME = "PKCOLUMN_NAME";
 
     public static final String PKTABLE_NAME = "PKTABLE_NAME";
 
@@ -38,6 +38,16 @@ public class DatabaseFactory {
             case SQL_SERVER: return new DatabaseSqlserver(host, port, dbName, user, password);
             case FIREBIRD: return new DatabaseFirebird(host, port, dbName, user, password);
             default: return null;
+        }
+    }
+
+    public static void close(ResultSet rs) {
+        if(rs != null) {
+            try {
+                rs.close();
+            }catch(Exception e){
+                ;
+            }
         }
     }
 }

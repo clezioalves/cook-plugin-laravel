@@ -61,8 +61,6 @@ public class Generator {
     public static final String BELONGS_TO_MANY = "belongsToMany";
     public static final String HAS_ONE = "hasOne";
     public static final String HAS_MANY = "hasMany";
-    public static final String CREATED_AT = "created_at";
-    public static final String UPDATED_AT = "updated_at";
 
     private static Generator instance = null;
 
@@ -196,6 +194,7 @@ public class Generator {
         String option = null;
         TableDesign tableDesign = new TableDesign(tableName);
         tableDesign.setAttributeList(getAttributeList(tableName));
+        tableDesign.setTimestamps(getTimestamps(tableDesign));
         PrintUtilPlugin.outn(PLEASE_CONFIRM_THE_FOLLOWING_ASSOCIATIONS);
         //ManyToOneList
         for (ForeingKey fk : this.getManyToOneList(tableName)) {
@@ -230,6 +229,19 @@ public class Generator {
             }
         }
         return tableDesign;
+    }
+
+    private Boolean getTimestamps(TableDesign tableDesign) {
+        Boolean existsCreatedAt = Boolean.FALSE;
+        Boolean existsUpdatedAt = Boolean.FALSE;
+        for(Attribute attribute : tableDesign.getAttributeList()){
+            if(attribute.getName().equals(TableDesign.CREATED_AT)){
+                existsCreatedAt = Boolean.TRUE;
+            }else if(attribute.getName().equals(TableDesign.UPDATED_AT)){
+                existsUpdatedAt = Boolean.TRUE;
+            }
+        }
+        return existsCreatedAt && existsUpdatedAt;
     }
 
     private ModelDesign getModelDesign(String tableName) throws Exception {
@@ -310,14 +322,15 @@ public class Generator {
         //Open connection
         this.database.openConnection();
         //List tables
-        ResultSet rs = database.getConnection().getMetaData().getTables(null, null, "%", new String[]{TABLE});
+        ResultSet rs = null;
         try {
+            rs = database.getConnection().getMetaData().getTables(null, null, "%", new String[]{TABLE});
             while (rs.next()) {
                 tableList.add(rs.getString(DatabaseFactory.TABLE_NAME));
             }
         }finally {
-            rs.close();
             //Close connection
+            DatabaseFactory.close(rs);
             this.database.closeConnection();
         }
         return tableList;
@@ -329,13 +342,14 @@ public class Generator {
         //Open connection
         this.database.openConnection();
         //List tables
-        ResultSet rs = database.getConnection().getMetaData().getTables(null, null, "%", new String[]{TABLE});
+        ResultSet rs = null;
         try {
+            rs = database.getConnection().getMetaData().getTables(null, null, "%", new String[]{TABLE});
             while (rs.next()) {
                 tableListTmp.add(rs.getString(DatabaseFactory.TABLE_NAME));
             }
         }finally {
-            rs.close();
+            DatabaseFactory.close(rs);
             //Close connection
             this.database.closeConnection();
         }
@@ -355,8 +369,9 @@ public class Generator {
         //Open connection
         this.database.openConnection();
         //List attributes
-        ResultSet rs = database.getConnection().getMetaData().getColumns(null, null, tableName, "%");
+        ResultSet rs = null;
         try {
+            rs = database.getConnection().getMetaData().getColumns(null, null, tableName, "%");
             while (rs.next()) {
                 Attribute attribute = new Attribute(
                         rs.getString(DatabaseFactory.COLUMN_NAME), rs.getString(DatabaseFactory.TYPE_NAME),
@@ -366,7 +381,7 @@ public class Generator {
                 attributeList.add(attribute);
             }
         }finally {
-            rs.close();
+            DatabaseFactory.close(rs);
             //Close connection
             this.database.closeConnection();
         }
@@ -391,8 +406,8 @@ public class Generator {
             }
         }
         for(Attribute attribute : attributeList){
-            if(attribute.getPrimaryKey() || CREATED_AT.equals(attribute.getName()) ||
-                    UPDATED_AT.equals(attribute.getName())){
+            if(attribute.getPrimaryKey() || TableDesign.CREATED_AT.equals(attribute.getName()) ||
+                    TableDesign.UPDATED_AT.equals(attribute.getName())){
                 attributeListRemove.add(attribute);
             }
         }
@@ -405,13 +420,14 @@ public class Generator {
         //Open connection
         this.database.openConnection();
         //List attributes
-        ResultSet rs = database.getConnection().getMetaData().getPrimaryKeys(database.getConnection().getCatalog(), null, tableName);
+        ResultSet rs = null;
         try {
+            rs = database.getConnection().getMetaData().getPrimaryKeys(database.getConnection().getCatalog(), null, tableName);
             if (rs.next()) {
                 primaryKey = new Attribute(rs.getString(DatabaseFactory.COLUMN_NAME));
             }
         }finally {
-            rs.close();
+            DatabaseFactory.close(rs);
             //Close connection
             this.database.closeConnection();
         }
@@ -422,13 +438,14 @@ public class Generator {
         List<ForeingKey> manyToOneList = new ArrayList<ForeingKey>();
         //Open connection
         this.database.openConnection();
-        ResultSet rs = database.getConnection().getMetaData().getImportedKeys(database.getConnection().getCatalog(), null, tableName);
+        ResultSet rs = null;
         try {
+            rs = database.getConnection().getMetaData().getImportedKeys(database.getConnection().getCatalog(), null, tableName);
             while (rs.next()) {
                 manyToOneList.add(new ForeingKey(rs.getString(DatabaseFactory.PKTABLE_NAME), rs.getString(DatabaseFactory.FKCOLUMN_NAME)));
             }
         }finally {
-            rs.close();
+            DatabaseFactory.close(rs);
             //Close connection
             this.database.closeConnection();
         }
@@ -442,13 +459,14 @@ public class Generator {
         this.database.openConnection();
         try {
             //OneToMany
-            ResultSet rs = database.getConnection().getMetaData().getExportedKeys(database.getConnection().getCatalog(), null, tableName);
+            ResultSet rs = null;
             try{
+                rs = database.getConnection().getMetaData().getExportedKeys(database.getConnection().getCatalog(), null, tableName);
                 while (rs.next()) {
                     oneToManyList.add(new ForeingKey(rs.getString(DatabaseFactory.FKTABLE_NAME), rs.getString(DatabaseFactory.FKCOLUMN_NAME)));
                 }
             }finally {
-                rs.close();
+                DatabaseFactory.close(rs);
             }
             //ManyToOne
             for(ForeingKey fk : oneToManyList) {
@@ -461,7 +479,7 @@ public class Generator {
                         fk.setManyToOne(new ForeingKey(rs.getString(DatabaseFactory.PKTABLE_NAME), rs.getString(DatabaseFactory.FKCOLUMN_NAME)));
                     }
                 } finally {
-                    rs.close();
+                    DatabaseFactory.close(rs);
                 }
             }
         }finally {
