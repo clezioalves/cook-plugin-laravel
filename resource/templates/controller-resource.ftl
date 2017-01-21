@@ -29,9 +29,13 @@ class ${modelDesign.getControllerName()} extends Controller
         $this->validate($request, ${modelDesign.getModelName()}::$rulesInsert);
         $${modelDesign.getModelNameVariable()}Dto = json_decode($request->getContent());
         $${modelDesign.getModelNameVariable()} = new ${modelDesign.getModelName()};
-        <#list modelDesign.getAttributeList() as attribute>
-        $${modelDesign.getModelNameVariable()}->${attribute.getName()} = $${modelDesign.getModelNameVariable()}Dto->${attribute.getName()};
-        </#list>
+        foreach (get_object_vars($${modelDesign.getModelNameVariable()}Dto) as $key => $value)
+        {
+            if($key != 'created_at' && $key != 'updated_at')
+            {
+                $${modelDesign.getModelNameVariable()}->$key = $value;
+            }
+        }
         $${modelDesign.getModelNameVariable()}->save();
         return response()->json($${modelDesign.getModelNameVariable()},201);
     }
@@ -65,9 +69,13 @@ class ${modelDesign.getControllerName()} extends Controller
         $${modelDesign.getModelNameVariable()}Dto = json_decode($request->getContent());
         try{
             $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
-            <#list modelDesign.getAttributeList() as attribute>
-            $${modelDesign.getModelNameVariable()}->${attribute.getName()} = $${modelDesign.getModelNameVariable()}Dto->${attribute.getName()};
-            </#list>
+            foreach (get_object_vars($${modelDesign.getModelNameVariable()}Dto) as $key => $value)
+            {
+                if($key != 'created_at' && $key != 'updated_at'<#if modelDesign.getPrimaryKey()??> && $key != '${modelDesign.getPrimaryKey().getName()}' </#if>)
+                {
+                    $${modelDesign.getModelNameVariable()}->$key = $value;
+                }
+            }
             $${modelDesign.getModelNameVariable()}->save();
             return response()->json($${modelDesign.getModelNameVariable()},201);
         }catch(ModelNotFoundException $ex){

@@ -61,6 +61,7 @@ public class Generator {
     public static final String BELONGS_TO_MANY = "belongsToMany";
     public static final String HAS_ONE = "hasOne";
     public static final String HAS_MANY = "hasMany";
+    private static final String PATH_ROUTES = "routes";
 
     private static Generator instance = null;
 
@@ -145,7 +146,11 @@ public class Generator {
             Boolean generateFile = checkFileExists(fileName);
             if(generateFile) {
                 FreemarkerWrapper.getInstance().addVar("modelDesign", modelDesign);
-                String arq = FreemarkerWrapper.getInstance().parseTemplate("controller-resource.ftl");
+                String arq = null;
+                if(resource) {
+                    arq = FreemarkerWrapper.getInstance().parseTemplate("controller-resource.ftl");
+                    createResourceRoute(modelDesign);
+                }
                 FileUtilPlugin.saveToPath(fileName, arq);
                 out.setResultProcess(ResultProcess.SUCESS, CONTROLLER_CREATED_SUCCESSFULLY);
             }else{
@@ -159,6 +164,29 @@ public class Generator {
         return out;
     }
 
+    private void createResourceRoute(ModelDesign modelDesign) throws Exception {
+        String fileName = getFileNameResourceRoute();
+        String routesFileContent = readFile(fileName);
+        Pattern p = Pattern.compile("Route::resource\\('"+modelDesign.getResourceName()+"'");
+        Matcher m = p.matcher(routesFileContent);
+        if (!m.find()) {
+            FreemarkerWrapper.getInstance().addVar("currentContent", routesFileContent);
+            FreemarkerWrapper.getInstance().addVar("modelDesign", modelDesign);
+            String arq = FreemarkerWrapper.getInstance().parseTemplate("routes-resource.ftl");
+            FileUtilPlugin.saveToPath(fileName, arq);
+            printInfoRoutes(modelDesign);
+        }
+    }
+
+    private void printInfoRoutes(ModelDesign modelDesign) {
+        PrintUtilPlugin.printLineGreen("Creating RESTful Routes:");
+        PrintUtilPlugin.printLineYellow("GET|HEAD  | api/"+modelDesign.getResourceName()+"               | "+modelDesign.getControllerName()+"@index");
+        PrintUtilPlugin.printLineYellow("POST      | api/"+modelDesign.getResourceName()+"               | "+modelDesign.getControllerName()+"@store");
+        PrintUtilPlugin.printLineYellow("GET|HEAD  | api/"+modelDesign.getResourceName()+"/{id}          | "+modelDesign.getControllerName()+"@show");
+        PrintUtilPlugin.printLineYellow("PUT|PATCH | api/"+modelDesign.getResourceName()+"/{id}          | "+modelDesign.getControllerName()+"@update");
+        PrintUtilPlugin.printLineYellow("DELETE    | api/"+modelDesign.getResourceName()+"/{id}          | "+modelDesign.getControllerName()+"@destroy");
+    }
+
     private Boolean checkFileExists(String fileName) {
         Boolean generateFile = true;
         if(new File(fileName).exists()){
@@ -167,16 +195,6 @@ public class Generator {
             generateFile = this.inputConfirm(N);
         }
         return generateFile;
-    }
-
-    private String getFileNameModel(String name) {
-        String modelPath = pathProject + File.separator + PATH_APP + File.separator + PATH_MODEL + File.separator;
-        return modelPath + File.separator + this.getModelName(name) + ".php";
-    }
-
-    private String getFileNameController(String name) {
-        String controllerPath = pathProject + File.separator + PATH_APP + File.separator + PATH_CONTROLLER + File.separator;
-        return controllerPath + File.separator + this.getControllerName(name) + ".php";
     }
 
     private void configureInflector() {
@@ -389,7 +407,7 @@ public class Generator {
     }
 
     private List<Attribute> getAttributeControllerList(String tableName) throws SQLException, ClassNotFoundException {
-        List<Attribute> attributeList = getAttributeList(tableName);
+        List<Attribute>  attributeList = getAttributeList(tableName);
         Set<Attribute> attributeListRemove = new HashSet();
         for (ForeingKey fk : this.getManyToOneList(tableName)) {
             for(Attribute attribute : attributeList){
@@ -406,7 +424,7 @@ public class Generator {
             }
         }
         for(Attribute attribute : attributeList){
-            if(attribute.getPrimaryKey() || TableDesign.CREATED_AT.equals(attribute.getName()) ||
+            if(TableDesign.CREATED_AT.equals(attribute.getName()) ||
                     TableDesign.UPDATED_AT.equals(attribute.getName())){
                 attributeListRemove.add(attribute);
             }
@@ -493,4 +511,18 @@ public class Generator {
         return new String(Files.readAllBytes(Paths.get(filename)));
     }
 
+    private String getFileNameModel(String name) {
+        String modelPath = pathProject + File.separator + PATH_APP + File.separator + PATH_MODEL + File.separator;
+        return modelPath + this.getModelName(name) + ".php";
+    }
+
+    private String getFileNameController(String name) {
+        String controllerPath = pathProject + File.separator + PATH_APP + File.separator + PATH_CONTROLLER + File.separator;
+        return controllerPath + this.getControllerName(name) + ".php";
+    }
+
+    public String getFileNameResourceRoute() {
+        String routesPath = pathProject + File.separator + PATH_ROUTES + File.separator;
+        return routesPath + "api.php";
+    }
 }

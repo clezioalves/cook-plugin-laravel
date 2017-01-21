@@ -14,6 +14,10 @@ public class PrintUtilPlugin extends PrintUtil {
         outn(getRedFont() + text + PrintUtil.getColorReset());
     }
 
+    public static void printLineGreen(String text) {
+        outn(getGreenFont() + text + PrintUtil.getColorReset());
+    }
+
     public static void printNewLine() {
         PrintUtil.outn("");
     }

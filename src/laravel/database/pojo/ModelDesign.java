@@ -86,4 +86,17 @@ public class ModelDesign {
     public String getModelNameVariable(){
         return this.getModelName().toLowerCase();
     }
+
+    public String getResourceName() {
+        return Helper.getInstance().pluralize(this.getModelName().toLowerCase());
+    }
+
+    public Attribute getPrimaryKey(){
+        for(Attribute attribute : attributeList){
+            if(attribute.getPrimaryKey()){
+                return attribute;
+            }
+        }
+        return null;
+    }
 }
