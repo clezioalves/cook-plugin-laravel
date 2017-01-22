@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\${modelDesign.getModelName()};
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ${modelDesign.getControllerName()} extends Controller
 {
@@ -48,12 +47,8 @@ class ${modelDesign.getControllerName()} extends Controller
      */
     public function show($id)
     {
-        try{
-            $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
-            return $${modelDesign.getModelNameVariable()};
-        }catch(ModelNotFoundException $ex){
-            return response()->json($ex->getMessage(), 422);
-        }
+        $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
+        return $${modelDesign.getModelNameVariable()};
     }
 
     /**
@@ -67,20 +62,16 @@ class ${modelDesign.getControllerName()} extends Controller
     {
         $this->validate($request, ${modelDesign.getModelName()}::$rulesUpdate);
         $${modelDesign.getModelNameVariable()}Dto = json_decode($request->getContent());
-        try{
-            $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
-            foreach (get_object_vars($${modelDesign.getModelNameVariable()}Dto) as $key => $value)
+        $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
+        foreach (get_object_vars($${modelDesign.getModelNameVariable()}Dto) as $key => $value)
+        {
+            if($key != 'created_at' && $key != 'updated_at'<#if modelDesign.getPrimaryKey()??> && $key != '${modelDesign.getPrimaryKey().getName()}' </#if>)
             {
-                if($key != 'created_at' && $key != 'updated_at'<#if modelDesign.getPrimaryKey()??> && $key != '${modelDesign.getPrimaryKey().getName()}' </#if>)
-                {
-                    $${modelDesign.getModelNameVariable()}->$key = $value;
-                }
+                $${modelDesign.getModelNameVariable()}->$key = $value;
             }
-            $${modelDesign.getModelNameVariable()}->save();
-            return response()->json($${modelDesign.getModelNameVariable()},201);
-        }catch(ModelNotFoundException $ex){
-            return response()->json($ex->getMessage(), 422);
         }
+        $${modelDesign.getModelNameVariable()}->save();
+        return response()->json($${modelDesign.getModelNameVariable()},201);
     }
 
     /**
@@ -91,12 +82,8 @@ class ${modelDesign.getControllerName()} extends Controller
      */
     public function destroy($id)
     {
-        try{
-            $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
-            $${modelDesign.getModelNameVariable()}->delete();
-            return response()->json($${modelDesign.getModelNameVariable()},204);
-        }catch(ModelNotFoundException $ex){
-            return response()->json($ex->getMessage(), 422);
-        }
+        $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
+        $${modelDesign.getModelNameVariable()}->delete();
+        return response()->json($${modelDesign.getModelNameVariable()},204);
     }
 }

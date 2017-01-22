@@ -20,7 +20,7 @@ public class DatabaseMysql implements IDatabase {
     private String password;
 
     public DatabaseMysql(String host, Integer port, String dbName, String user, String password) {
-        this.url = String.format("jdbc:mysql://%s:%d/%s?reconnect=true", host, port, dbName);
+        this.url = String.format("jdbc:mysql://%s:%d/%s?reconnect=true&useSSL=false", host, port, dbName);
         this.user = user;
         this.password = password;
     }

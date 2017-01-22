@@ -1,4 +1,4 @@
-package laravel.database.pojo;
+package laravel.database.structure;
 
 import laravel.cook.Helper;
 

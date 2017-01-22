@@ -1,4 +1,4 @@
-package laravel.database.pojo;
+package laravel.database.structure;
 
 /**
  * Created by Clézio on 15/01/2017.
