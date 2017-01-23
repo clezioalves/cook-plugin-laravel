@@ -130,6 +130,9 @@ public class Inflector {
             // Need to check for the following words that are already pluralized:
             this.addPluralize("(people|men|children|sexes|moves|stadiums)$", "$1"); // irregulars
             this.addPluralize("(oxen|octopi|viri|aliases|quizzes)$", "$1"); // special rules
+            this.addPluralize("r$", "rs");
+            this.addPluralize("e$", "es");
+            this.addPluralize("n$", "ns");
 
             //Singularize
             this.addSingularize("(s|si|u)s$", "$1s"); // '-us' and '-ss' are already singular
@@ -164,10 +167,10 @@ public class Inflector {
             this.addSingularize("(quiz)zes$", "$1");
 
             this.addIrregular("person", "people");
+            this.addIrregular("woman", "women");
             this.addIrregular("man", "men");
             this.addIrregular("child", "children");
             this.addIrregular("sex", "sexes");
-            this.addIrregular("move", "moves");
             this.addIrregular("stadium", "stadiums");
             this.addUncountable("equipment", "information", "rice", "money", "species", "series", "fish", "sheep");
 
