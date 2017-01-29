@@ -84,11 +84,14 @@ public class ModelDesign {
     }
 
     public String getModelNameVariable(){
-        return this.getModelName().toLowerCase();
+        String modelName = this.getModelName();
+        modelName = modelName.substring(0,1).toLowerCase() + "" + modelName.substring(1);
+        modelName = modelName.replaceAll("([A-Z]+)","\\_$1");
+        return modelName.toLowerCase();
     }
 
     public String getResourceName() {
-        return Helper.getInstance().pluralize(this.getModelName().toLowerCase());
+        return Helper.getInstance().pluralize(this.getModelNameVariable().replaceAll("(_)","\\-").toLowerCase());
     }
 
     public Attribute getPrimaryKey(){
