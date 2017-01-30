@@ -99,6 +99,7 @@ public class ModelDesign {
     public String getModelNameVariable(){
         String modelName = this.getModelName();
         modelName = modelName.substring(0,1).toLowerCase() + "" + modelName.substring(1);
+        modelName = modelName.replaceAll("([A-Z]+)","\\_$1").toLowerCase();
         return modelName;
     }
 
