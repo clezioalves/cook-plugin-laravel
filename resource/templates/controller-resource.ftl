@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\${modelDesign.getModelName()};
+<#list modelDesign.getListaModelImports() as modelName>
+use App\Models\${modelName};
+</#list>
 
 class ${modelDesign.getControllerName()} extends Controller
 {
@@ -28,14 +31,31 @@ class ${modelDesign.getControllerName()} extends Controller
         $this->validate($request, ${modelDesign.getModelName()}::$rulesInsert);
         $${modelDesign.getModelNameVariable()}Dto = json_decode($request->getContent());
         $${modelDesign.getModelNameVariable()} = new ${modelDesign.getModelName()};
-        foreach (get_object_vars($${modelDesign.getModelNameVariable()}Dto) as $key => $value)
-        {
-            if($key != 'created_at' && $key != 'updated_at')
-            {
-                $${modelDesign.getModelNameVariable()}->$key = $value;
+        <#list modelDesign.getAttributeList() as attribute>
+        <#if attribute.getName() != "id" && attribute.getName() != "created_at" && attribute.getName() != "updated_at">
+        $${modelDesign.getModelNameVariable()}->${attribute.getName()} = $${modelDesign.getModelNameVariable()}Dto->${attribute.getName()};
+        </#if>
+        </#list>
+        <#list modelDesign.getOneToManyList() as modelRelation>
+        $${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()}()->associate(${modelRelation.getModelName()}::find($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getColumnName()}->id));
+        </#list>
+        $${modelDesign.getModelNameVariable()}->save();
+        <#list modelDesign.getOneToOneList() as modelRelation>
+        $${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()} = ${modelRelation.getModelName()}::find($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getModelNameVariable()}->id);
+        </#list>
+        <#list modelDesign.getManyToManyList() as modelRelation>
+        if(isset($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getModelNameVariableList()})){
+            foreach ($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getModelNameVariableList()} as $${modelRelation.getModelNameVariable()}Dto){
+                $${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()}()->save(${modelRelation.getModelName()}::find($${modelRelation.getModelNameVariable()}Dto->id));
             }
         }
-        $${modelDesign.getModelNameVariable()}->save();
+        </#list>
+        <#list modelDesign.getManyToOneList() as modelRelation>
+        foreach ($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getModelNameVariableList()} as $${modelRelation.getModelNameVariable()}Dto){
+            //$${modelRelation.getModelNameVariable()} = new ${modelRelation.getModelName()}();
+            //$${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()}()->save($${modelRelation.getModelNameVariable()});
+        }
+        </#list>
         return response()->json($${modelDesign.getModelNameVariable()},201);
     }
 
@@ -63,14 +83,31 @@ class ${modelDesign.getControllerName()} extends Controller
         $this->validate($request, ${modelDesign.getModelName()}::$rulesUpdate);
         $${modelDesign.getModelNameVariable()}Dto = json_decode($request->getContent());
         $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
-        foreach (get_object_vars($${modelDesign.getModelNameVariable()}Dto) as $key => $value)
-        {
-            if($key != 'created_at' && $key != 'updated_at'<#if modelDesign.getPrimaryKey()??> && $key != '${modelDesign.getPrimaryKey().getName()}' </#if>)
-            {
-                $${modelDesign.getModelNameVariable()}->$key = $value;
+        <#list modelDesign.getAttributeList() as attribute>
+        <#if attribute.getName() != "id" && attribute.getName() != "created_at" && attribute.getName() != "updated_at">
+        $${modelDesign.getModelNameVariable()}->${attribute.getName()} = $${modelDesign.getModelNameVariable()}Dto->${attribute.getName()};
+        </#if>
+        </#list>
+        <#list modelDesign.getOneToManyList() as modelRelation>
+        $${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()}()->associate(${modelRelation.getModelName()}::find($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getColumnName()}->id));
+        </#list>
+        $${modelDesign.getModelNameVariable()}->save();
+        <#list modelDesign.getOneToOneList() as modelRelation>
+        $${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()} = ${modelRelation.getModelName()}::find($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getModelNameVariable()}->id);
+        </#list>
+        <#list modelDesign.getManyToManyList() as modelRelation>
+        if(isset($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getModelNameVariableList()})){
+            foreach ($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getModelNameVariableList()} as $${modelRelation.getModelNameVariable()}Dto){
+                $${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()}()->save(${modelRelation.getModelName()}::find($${modelRelation.getModelNameVariable()}Dto->id));
             }
         }
-        $${modelDesign.getModelNameVariable()}->save();
+        </#list>
+        <#list modelDesign.getManyToOneList() as modelRelation>
+        foreach ($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getModelNameVariableList()} as $${modelRelation.getModelNameVariable()}Dto){
+            //$${modelRelation.getModelNameVariable()} = new ${modelRelation.getModelName()}();
+            //$${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()}()->save($${modelRelation.getModelNameVariable()});
+        }
+        </#list>
         return response()->json($${modelDesign.getModelNameVariable()},201);
     }
 

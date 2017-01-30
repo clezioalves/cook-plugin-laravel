@@ -31,6 +31,8 @@ public class DatabaseFactory {
 
     public final static String FIREBIRD = "firebird";
 
+    public static final String PKCOLUMN_NAME = "PKCOLUMN_NAME";
+
     public IDatabase getDataBase(String type, String host, int port, String dbName, String user, String password){
         switch (type){
             case POSTGRES: return new DatabasePostgres(host, port, dbName, user, password);

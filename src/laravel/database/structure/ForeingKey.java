@@ -11,11 +11,23 @@ public class ForeingKey {
 
     private String columnName;
 
+    private String pkColumnName;
+
     private ForeingKey manyToOne;
 
-    public ForeingKey(String tableName, String columnName) {
+    private String fkTableName;
+
+    private String fkColumnName;
+
+    public ForeingKey(String tableName, String columnName, String pkColumnName) {
         this.tableName = tableName;
         this.columnName = columnName;
+        this.pkColumnName = pkColumnName;
+    }
+
+    public ForeingKey(String tableName, String columnName, String pkColumnName, String fkTableName) {
+        this(tableName, columnName, pkColumnName);
+        this.fkTableName = fkTableName;
     }
 
     public String getTableName() {
@@ -34,6 +46,14 @@ public class ForeingKey {
         this.columnName = columnName;
     }
 
+    public String getPkColumnName() {
+        return pkColumnName;
+    }
+
+    public void setPkColumnName(String pkColumnName) {
+        this.pkColumnName = pkColumnName;
+    }
+
     public ForeingKey getManyToOne() {
         return manyToOne;
     }
@@ -48,6 +68,36 @@ public class ForeingKey {
 
     public String getTableNameSingularize(){
         return Helper.getInstance().singularize(this.getTableName());
+    }
+
+    public String getFkTableName() {
+        return fkTableName;
+    }
+
+    public void setFkTableName(String fkTableName) {
+        this.fkTableName = fkTableName;
+    }
+
+    public String getFkColumnName() {
+        return fkColumnName;
+    }
+
+    public void setFkColumnName(String fkColumnName) {
+        this.fkColumnName = fkColumnName;
+    }
+
+    public String getColumnNameVariable(){
+        String modelName = this.getColumnName();
+        modelName = Helper.getInstance().modelize(modelName);
+        modelName = modelName.substring(0,1).toLowerCase() + "" + modelName.substring(1);
+        return modelName;
+    }
+
+    public String getTableNameVariable(){
+        String modelName = this.getTableName();
+        modelName = Helper.getInstance().modelize(modelName);
+        modelName = modelName.substring(0,1).toLowerCase() + "" + modelName.substring(1);
+        return modelName;
     }
 
     public String getTableNameCollections(){

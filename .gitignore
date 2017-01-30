@@ -1,3 +1,5 @@
 /.idea
 /out
 cook-plugin-laravel.iml
+bin/laravel
+lib/META-INF

@@ -121,7 +121,7 @@ public class TableDesign {
             if(attribute.getRequired() && !attribute.getPrimaryKey()){
                 attributeName = attribute.getName();
                 if(foreingKey != null){
-                    attributeName = Helper.getInstance().singularize(foreingKey.getTableName());
+                    attributeName = foreingKey.getColumnNameVariable();
                 }
                 rules.append("required|");
             }

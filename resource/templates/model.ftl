@@ -32,19 +32,19 @@ class ${tableDesign.getNameModelize()} extends Model {
 
     <#list tableDesign.getManyToOneList() as attr>
     /**
-     * Get the ${attr.getTableNameSingularize()} record associated with the ${tableDesign.getNameSingularize()}.
+     * Get the ${attr.getColumnNameVariable()} record associated with the ${tableDesign.getNameSingularize()}.
      */
-    public function ${attr.getTableNameSingularize()}(){
-        return $this->belongsTo('App\Models\${attr.getTableNameModelize()}');
+    public function ${attr.getColumnNameVariable()}(){
+        return $this->belongsTo('App\Models\${attr.getTableNameModelize()}','${attr.getColumnName()}','${attr.getPkColumnName()}');
     }
 
     </#list>
     <#list tableDesign.getOneToOneList() as attr>
     /**
-     * Get the ${attr.getTableNameSingularize()} record associated with the ${tableDesign.getNameSingularize()}.
+     * Get the ${attr.getTableNameVariable()} record associated with the ${tableDesign.getNameSingularize()}.
      */
-    public function ${attr.getTableNameSingularize()}(){
-        return $this->belongsTo('App\Models\${attr.getTableNameModelize()}');
+    public function ${attr.getTableNameVariable()}(){
+        return $this->belongsTo('App\Models\${attr.getTableNameModelize()}','${attr.getPkColumnName()}','${attr.getColumnName()}');
     }
 
     </#list>
@@ -53,7 +53,7 @@ class ${tableDesign.getNameModelize()} extends Model {
      * Get the ${attr.getTableNameCollections()} for the ${tableDesign.getNameSingularize()}.
      */
     public function ${attr.getTableNameCollections()}(){
-        return $this->hasMany('App\Models\${attr.getTableNameModelize()}');
+        return $this->hasMany('App\Models\${attr.getTableNameModelize()}','${attr.getPkColumnName()}','${attr.getColumnName()}');
     }
 
     </#list>
@@ -61,8 +61,8 @@ class ${tableDesign.getNameModelize()} extends Model {
     /**
      * The ${attr.getManyToOne().getTableNameCollections()} that belong to the ${tableDesign.getNameSingularize()}.
      */
-    public function ${attr.getManyToOne().getTableNameCollections()}(){
-        return $this->belongsToMany('App\Models\${attr.getManyToOne().getTableNameModelize()}');
+    public function ${attr.getManyToOne().getTableNameSingularize()}(){
+        return $this->belongsToMany('App\Models\${attr.getManyToOne().getTableNameModelize()}','${attr.getManyToOne().getFkTableName()}','${attr.getColumnName()}','${attr.getManyToOne().getColumnName()}');
     }
 
     </#list>

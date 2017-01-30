@@ -63,7 +63,8 @@ public class Recipe implements IFCook {
     public static final String PATH_MODEL = "Models";
     public static final String PATH_CONTROLLER = "Http" + File.separator + "Controllers";
     public static final String CONTROLLER = "Controller";
-    public static final String REGEX_EXTRACT_RELATIONSHIPS = ".*->(\\w+)\\('(.*\\\\([^\\.]+))'\\);";
+    //public static final String REGEX_EXTRACT_RELATIONSHIPS = ".*->(\\w+)\\('(.*\\\\([^\\.]+))'\\);";
+    public static final String REGEX_EXTRACT_RELATIONSHIPS = "public function (\\w+).*"+System.lineSeparator()+".*(->(\\w+)\\('(.*\\\\([\\w+]+))').*;";
     public static final String BELONGS_TO = "belongsTo";
     public static final String BELONGS_TO_MANY = "belongsToMany";
     public static final String HAS_ONE = "hasOne";
@@ -81,6 +82,21 @@ public class Recipe implements IFCook {
     private Integer success;
 
     private List<String> changeHistory;
+
+    /*public static void main(String args[]) throws Exception {
+        Helper.getInstance().configureInflector(Inflector.PT_BR);
+        Recipe r = new Recipe();
+        String modelContent = r.readFile("C:\\dev\\laravel_projects\\sportal\\app\\Models\\Setor.php");
+        Pattern p = Pattern.compile(REGEX_EXTRACT_RELATIONSHIPS);
+        Matcher m = p.matcher(modelContent);
+        System.out.println("m: " + m.groupCount());
+        while (m.find()) {
+            String attributeName = m.group(1);
+            String relationType = m.group(3);
+            String simpleNameModel = m.group(5);
+            System.out.println("simpleNameModel: "+simpleNameModel+" relationType: "+relationType+" attributeName: "+attributeName);
+        }
+    }*/
 
     public Recipe(){
         changeHistory = new ArrayList<String>();
@@ -362,22 +378,23 @@ public class Recipe implements IFCook {
     }
 
     private ModelDesign getModelDesign(String tableName) throws Exception {
-        ModelDesign modelDesign = new ModelDesign(getModelName(tableName));
+        ModelDesign modelDesign = new ModelDesign(getModelName(tableName),"Teste");
         modelDesign.setAttributeList(getAttributeControllerList(tableName));
         String modelContent = readFile(getFileNameModel(tableName));
         Pattern p = Pattern.compile(REGEX_EXTRACT_RELATIONSHIPS);
         Matcher m = p.matcher(modelContent);
         while (m.find()) {
-            String relationType = m.group(1);
-            String simpleNameModel = m.group(3);
+            String attributeName = m.group(1);
+            String relationType = m.group(3);
+            String simpleNameModel = m.group(5);
             if(BELONGS_TO.equals(relationType)){
-                modelDesign.getOneToManyList().add(new ModelDesign(simpleNameModel));
+                modelDesign.getOneToManyList().add(new ModelDesign(simpleNameModel, attributeName));
             }else if(BELONGS_TO_MANY.equals(relationType)){
-                modelDesign.getManyToManyList().add(new ModelDesign(simpleNameModel));
+                modelDesign.getManyToManyList().add(new ModelDesign(simpleNameModel, attributeName));
             }else if(HAS_ONE.equals(relationType)){
-                modelDesign.getOneToOneList().add(new ModelDesign(simpleNameModel));
+                modelDesign.getOneToOneList().add(new ModelDesign(simpleNameModel, attributeName));
             }else if(HAS_MANY.equals(relationType)){
-                modelDesign.getManyToOneList().add(new ModelDesign(simpleNameModel));
+                modelDesign.getManyToOneList().add(new ModelDesign(simpleNameModel, attributeName));
             }else{
                 continue;
             }
@@ -559,7 +576,9 @@ public class Recipe implements IFCook {
         try {
             rs = database.getConnection().getMetaData().getImportedKeys(database.getConnection().getCatalog(), null, tableName);
             while (rs.next()) {
-                manyToOneList.add(new ForeingKey(rs.getString(DatabaseFactory.PKTABLE_NAME), rs.getString(DatabaseFactory.FKCOLUMN_NAME)));
+                manyToOneList.add(new ForeingKey(
+                        rs.getString(DatabaseFactory.PKTABLE_NAME), rs.getString(DatabaseFactory.FKCOLUMN_NAME),rs.getString(DatabaseFactory.PKCOLUMN_NAME))
+                );
             }
         }finally {
             DatabaseFactory.close(rs);
@@ -580,7 +599,11 @@ public class Recipe implements IFCook {
             try{
                 rs = database.getConnection().getMetaData().getExportedKeys(database.getConnection().getCatalog(), null, tableName);
                 while (rs.next()) {
-                    oneToManyList.add(new ForeingKey(rs.getString(DatabaseFactory.FKTABLE_NAME), rs.getString(DatabaseFactory.FKCOLUMN_NAME)));
+                    oneToManyList.add(
+                            new ForeingKey(
+                                    rs.getString(DatabaseFactory.FKTABLE_NAME),
+                                    rs.getString(DatabaseFactory.FKCOLUMN_NAME),
+                                    rs.getString(DatabaseFactory.PKCOLUMN_NAME)));
                 }
             }finally {
                 DatabaseFactory.close(rs);
@@ -593,7 +616,14 @@ public class Recipe implements IFCook {
                         if(rs.getString(DatabaseFactory.PKTABLE_NAME).equals(tableName)){
                             continue;
                         }
-                        fk.setManyToOne(new ForeingKey(rs.getString(DatabaseFactory.PKTABLE_NAME), rs.getString(DatabaseFactory.FKCOLUMN_NAME)));
+                        fk.setManyToOne(
+                                new ForeingKey(
+                                        rs.getString(DatabaseFactory.PKTABLE_NAME),
+                                        rs.getString(DatabaseFactory.FKCOLUMN_NAME),
+                                        rs.getString(DatabaseFactory.PKCOLUMN_NAME),
+                                        rs.getString(DatabaseFactory.FKTABLE_NAME)
+                                )
+                        );
                     }
                 } finally {
                     DatabaseFactory.close(rs);
