@@ -43,19 +43,6 @@ class ${modelDesign.getControllerName()} extends Controller
         <#list modelDesign.getOneToOneList() as modelRelation>
         $${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()} = ${modelRelation.getModelName()}::find($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getModelNameVariable()}->id);
         </#list>
-        <#list modelDesign.getManyToManyList() as modelRelation>
-        if(isset($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getModelNameVariableList()})){
-            foreach ($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getModelNameVariableList()} as $${modelRelation.getModelNameVariable()}Dto){
-                $${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()}()->save(${modelRelation.getModelName()}::find($${modelRelation.getModelNameVariable()}Dto->id));
-            }
-        }
-        </#list>
-        <#list modelDesign.getManyToOneList() as modelRelation>
-        foreach ($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getModelNameVariableList()} as $${modelRelation.getModelNameVariable()}Dto){
-            //$${modelRelation.getModelNameVariable()} = new ${modelRelation.getModelName()}();
-            //$${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()}()->save($${modelRelation.getModelNameVariable()});
-        }
-        </#list>
         return response()->json($${modelDesign.getModelNameVariable()},201);
     }
 
@@ -94,19 +81,6 @@ class ${modelDesign.getControllerName()} extends Controller
         $${modelDesign.getModelNameVariable()}->save();
         <#list modelDesign.getOneToOneList() as modelRelation>
         $${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()} = ${modelRelation.getModelName()}::find($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getModelNameVariable()}->id);
-        </#list>
-        <#list modelDesign.getManyToManyList() as modelRelation>
-        if(isset($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getModelNameVariableList()})){
-            foreach ($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getModelNameVariableList()} as $${modelRelation.getModelNameVariable()}Dto){
-                $${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()}()->save(${modelRelation.getModelName()}::find($${modelRelation.getModelNameVariable()}Dto->id));
-            }
-        }
-        </#list>
-        <#list modelDesign.getManyToOneList() as modelRelation>
-        foreach ($${modelDesign.getModelNameVariable()}Dto->${modelRelation.getModelNameVariableList()} as $${modelRelation.getModelNameVariable()}Dto){
-            //$${modelRelation.getModelNameVariable()} = new ${modelRelation.getModelName()}();
-            //$${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()}()->save($${modelRelation.getModelNameVariable()});
-        }
         </#list>
         return response()->json($${modelDesign.getModelNameVariable()},201);
     }

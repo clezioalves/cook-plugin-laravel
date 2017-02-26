@@ -106,7 +106,8 @@ public class Inflector {
             this.addIrregular("sotao", "sotaos");
             this.addIrregular("tabeliao", "tabeliaes");
             this.addIrregular("release", "releases");
-            this.addUncountable("atlas", "lapis", "onibus", "pires", "species", "virus", "status");
+            this.addIrregular("alocacao", "alocacoes");
+            this.addUncountable("atlas", "lapis", "onibus", "pires", "species", "virus", "status", "ferias");
         } else {
             //Pluralize
             this.addPluralize("(ax|test)is$", "$1es");

@@ -20,7 +20,7 @@ public class DatabaseFirebird implements IDatabase {
     private String password;
 
     public DatabaseFirebird(String host, Integer port, String dbName, String user, String password) {
-        this.url = String.format("jdbc:firebirdsql:%s/%d:%s", host, port, dbName);
+        this.url = String.format("jdbc:firebirdsql:%s/%d:%s", host, port, dbName.replaceAll("\"",""));
         this.user = user;
         this.password = password;
     }

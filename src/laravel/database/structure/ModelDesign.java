@@ -93,18 +93,19 @@ public class ModelDesign {
     }
 
     public String getControllerName(){
-        return Helper.getInstance().pluralize(this.getModelName())+"Controller";
+        return getControllerSimpleName() + "Controller";
+    }
+
+    public String getControllerSimpleName(){
+        return Helper.getInstance().pluralize(this.getModelName());
     }
 
     public String getModelNameVariable(){
-        String modelName = this.getModelName();
-        modelName = modelName.substring(0,1).toLowerCase() + "" + modelName.substring(1);
-        modelName = modelName.replaceAll("([A-Z]+)","\\_$1").toLowerCase();
-        return modelName;
+        return Character.toLowerCase(this.getModelName().charAt(0)) + this.getModelName().substring(1);
     }
 
     public String getResourceName() {
-        return Helper.getInstance().pluralize(this.getModelNameVariable().replaceAll("(_)","\\-").toLowerCase());
+        return getControllerSimpleName().replaceAll("(?=[A-Z])","-").toLowerCase().substring(1);
     }
 
     public String getModelNameVariableList(){

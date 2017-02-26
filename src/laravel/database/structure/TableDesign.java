@@ -121,11 +121,11 @@ public class TableDesign {
             if(attribute.getRequired() && !attribute.getPrimaryKey()){
                 attributeName = attribute.getName();
                 if(foreingKey != null){
-                    attributeName = foreingKey.getColumnNameVariable();
+                    attributeName = foreingKey.getTableNameVariable();
                 }
                 rules.append("required|");
             }
-            if(attribute.getType().equals(Attribute.VARCHAR)){
+            if(attribute.getType().equalsIgnoreCase(Attribute.VARCHAR)){
                 rules.append("max:"+attribute.getMaxLenght()+"|");
             }
 

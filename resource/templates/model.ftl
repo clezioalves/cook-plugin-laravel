@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class ${tableDesign.getNameModelize()} extends Model {
 
     protected $table = '${tableDesign.getName()}';
-
+    <#if tableDesign.getPrimaryKey()?? && tableDesign.getPrimaryKey().getName() != 'id'>
+    protected $primaryKey = '${tableDesign.getPrimaryKey().getName()}';
+    </#if>
     <#if !tableDesign.getTimestamps()>
     public $timestamps = false;
     </#if>
@@ -32,9 +34,9 @@ class ${tableDesign.getNameModelize()} extends Model {
 
     <#list tableDesign.getManyToOneList() as attr>
     /**
-     * Get the ${attr.getColumnNameVariable()} record associated with the ${tableDesign.getNameSingularize()}.
+     * Get the ${attr.getTableNameVariable()} record associated with the ${tableDesign.getNameSingularize()}.
      */
-    public function ${attr.getColumnNameVariable()}(){
+    public function ${attr.getTableNameVariable()}(){
         return $this->belongsTo('App\Models\${attr.getTableNameModelize()}','${attr.getColumnName()}','${attr.getPkColumnName()}');
     }
 
