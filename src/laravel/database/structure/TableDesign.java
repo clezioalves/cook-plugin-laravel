@@ -137,6 +137,36 @@ public class TableDesign {
         return attributeNameList;
     }
 
+    public List<String> getFillableAttributeNameList() {
+        List<String> attributeNameList = new ArrayList<String>();
+        for(Attribute attribute : this.getAttributeList()){
+            if(attribute.getName().equals(CREATED_AT) || attribute.getName().equals(UPDATED_AT)){
+                continue;
+            }
+            StringBuilder rules = new StringBuilder();
+            String attributeName = null;
+            ForeingKey foreingKey = this.getForeingKeyByNameColumn(attribute.getName());
+            if(attribute.getRequired() && !attribute.getPrimaryKey()){
+                attributeName = attribute.getName();
+                if(foreingKey != null){
+                    attributeName = foreingKey.getTableNameVariable();
+                }
+                rules.append("required|");
+            }
+            if(attribute.getType().equalsIgnoreCase(Attribute.VARCHAR)){
+                rules.append("max:"+attribute.getMaxLenght()+"|");
+            }
+
+            if(attributeName != null && rules.length() > 0){
+                attributeNameList.add(attributeName);
+            }
+
+        }
+        return attributeNameList;
+    }
+
+
+
     private ForeingKey getForeingKeyByNameColumn(String columnName){
         for(ForeingKey foreingKey : this.getManyToOneList()){
             if(columnName.equals(foreingKey.getColumnName())){

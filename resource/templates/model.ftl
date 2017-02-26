@@ -10,11 +10,18 @@ class ${tableDesign.getNameModelize()} extends Model {
     <#if tableDesign.getPrimaryKey()?? && tableDesign.getPrimaryKey().getName() != 'id'>
     protected $primaryKey = '${tableDesign.getPrimaryKey().getName()}';
     </#if>
+    <#if tableDesign.getFillableAttributeNameList()?size != 0>
+    protected $fillable = [
+        <#list tableDesign.getFillableAttributeNameList() as fillableAttributeName>
+        '${fillableAttributeName}'<#if (fillableAttributeName_index + 1) < tableDesign.getFillableAttributeNameList()?size>,</#if>
+        </#list>
+    ];
+    </#if>
     <#if !tableDesign.getTimestamps()>
     public $timestamps = false;
     </#if>
 
-    public static $rulesInsert = array(
+    public static $insertRules = array(
         //'field' => 'required|max:50',
     <#if tableDesign.getRuleAttributeNameList()?size != 0>
         <#list tableDesign.getRuleAttributeNameList() as ruleAttributeName>
@@ -23,7 +30,7 @@ class ${tableDesign.getNameModelize()} extends Model {
     </#if>
     );
 
-    public static $rulesUpdate = array(
+    public static $updateRules = array(
         //'field' => 'required|max:50',
     <#if tableDesign.getRuleAttributeNameList()?size != 0>
         <#list tableDesign.getRuleAttributeNameList() as ruleAttributeName>

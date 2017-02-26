@@ -28,7 +28,7 @@ class ${modelDesign.getControllerName()} extends Controller
      */
     public function store(Request $request)
     {
-        $this->validate($request, ${modelDesign.getModelName()}::$rulesInsert);
+        $this->validate($request, ${modelDesign.getModelName()}::$insertRules);
         $${modelDesign.getModelNameVariable()}Dto = json_decode($request->getContent());
         $${modelDesign.getModelNameVariable()} = new ${modelDesign.getModelName()};
         <#list modelDesign.getAttributeList() as attribute>
@@ -67,7 +67,7 @@ class ${modelDesign.getControllerName()} extends Controller
      */
     public function update(Request $request, $id)
     {
-        $this->validate($request, ${modelDesign.getModelName()}::$rulesUpdate);
+        $this->validate($request, ${modelDesign.getModelName()}::$updateRules);
         $${modelDesign.getModelNameVariable()}Dto = json_decode($request->getContent());
         $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
         <#list modelDesign.getAttributeList() as attribute>

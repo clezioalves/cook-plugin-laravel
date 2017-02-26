@@ -34,7 +34,8 @@ import java.util.regex.Pattern;
 public class Recipe implements IFCook {
 
     public static final String MODEL = "model";
-    public static final String CONTROLLER_RESOURCE = "controller-resource";
+    public static final String CONTROLLER_REST = "controller-rest";
+    public static final String CONTROLLER = "controller";
     public static final String ARTISAN_FILE = "artisan";
 
     public static final String DATABASE_CONFIG_FILE = ".env";
@@ -62,7 +63,7 @@ public class Recipe implements IFCook {
     public static final String PATH_APP = "app";
     public static final String PATH_MODEL = "Models";
     public static final String PATH_CONTROLLER = "Http" + File.separator + "Controllers";
-    public static final String CONTROLLER = "Controller";
+    public static final String CONTROLLER_SUFIX = "Controller";
     //public static final String REGEX_EXTRACT_RELATIONSHIPS = ".*->(\\w+)\\('(.*\\\\([^\\.]+))'\\);";
     public static final String REGEX_EXTRACT_RELATIONSHIPS = "public function (\\w+).*"+System.lineSeparator()+".*(->(\\w+)\\('(.*\\\\([\\w+]+))').*;";
     public static final String BELONGS_TO = "belongsTo";
@@ -126,7 +127,8 @@ public class Recipe implements IFCook {
         PrintUtil.outn("Available actions:");
         PrintUtil.outn("~~~~~~~~~~~~~~~~~~");
         PrintUtil.outn(MODEL);
-        PrintUtil.outn(CONTROLLER_RESOURCE);
+        PrintUtil.outn(CONTROLLER);
+        PrintUtil.outn(CONTROLLER_REST);
     }
 
     @Override
@@ -138,7 +140,8 @@ public class Recipe implements IFCook {
             return false;
         }
         if(!(param[1].toLowerCase().equals(MODEL) ||
-                param[1].toLowerCase().equals(CONTROLLER_RESOURCE))){
+                param[1].toLowerCase().equals(CONTROLLER) ||
+                param[1].toLowerCase().equals(CONTROLLER_REST))){
             printHelp();
             PrintUtil.outn("");
             return false;
@@ -182,7 +185,9 @@ public class Recipe implements IFCook {
 
             if (this.action.equals(MODEL)) {
                 resultProcess = this.buildModel();
-            }else if (this.action.equals(CONTROLLER_RESOURCE)) {
+            } else if (this.action.equals(CONTROLLER)) {
+                resultProcess = this.buildController(Boolean.FALSE);
+            } else if (this.action.equals(CONTROLLER_REST)) {
                 resultProcess = this.buildController(Boolean.TRUE);
             } else {
                 resultProcess.setResultProcess(ResultProcess.ERROR, "Action not found");
@@ -262,8 +267,10 @@ public class Recipe implements IFCook {
                 String content = null;
                 if(resource) {
                     content = FreemarkerWrapper.getInstance().parseTemplate("controller-resource.ftl");
-                    createResourceRoute(modelDesign);
+                }else{
+                    content = FreemarkerWrapper.getInstance().parseTemplate("controller.ftl");
                 }
+                createResourceRoute(modelDesign, resource);
                 FileUtilPlugin.saveToPath(fileName, content);
                 this.updateHistory(CREATED, fileName);
                 out.setResultProcess(ResultProcess.SUCESS, CONTROLLER_CREATED_SUCCESSFULLY);
@@ -278,8 +285,8 @@ public class Recipe implements IFCook {
         return out;
     }
 
-    private void createResourceRoute(ModelDesign modelDesign) throws Exception {
-        String fileName = getFileNameResourceRoute();
+    private void createResourceRoute(ModelDesign modelDesign, Boolean resource) throws Exception {
+        String fileName = getFileNameResourceRoute(resource);
         String routesFileContent = readFile(fileName);
         Pattern p = Pattern.compile("Route::resource\\('"+modelDesign.getResourceName()+"'");
         Matcher m = p.matcher(routesFileContent);
@@ -297,9 +304,11 @@ public class Recipe implements IFCook {
         PrintUtilPlugin.printLineGreen("Creating RESTful Routes:");
         PrintUtilPlugin.printLineYellow("GET|HEAD  | api/"+modelDesign.getResourceName()+"               | "+modelDesign.getControllerName()+"@index");
         PrintUtilPlugin.printLineYellow("POST      | api/"+modelDesign.getResourceName()+"               | "+modelDesign.getControllerName()+"@store");
+        PrintUtilPlugin.printLineYellow("GET|HEAD  | api/"+modelDesign.getResourceName()+"/create        | "+modelDesign.getControllerName()+"@create");
         PrintUtilPlugin.printLineYellow("GET|HEAD  | api/"+modelDesign.getResourceName()+"/{id}          | "+modelDesign.getControllerName()+"@show");
         PrintUtilPlugin.printLineYellow("PUT|PATCH | api/"+modelDesign.getResourceName()+"/{id}          | "+modelDesign.getControllerName()+"@update");
         PrintUtilPlugin.printLineYellow("DELETE    | api/"+modelDesign.getResourceName()+"/{id}          | "+modelDesign.getControllerName()+"@destroy");
+        PrintUtilPlugin.printLineYellow("GET|HEAD  | api/"+modelDesign.getResourceName()+"/{id}/edit     | "+modelDesign.getControllerName()+"@edit");
     }
 
     private Boolean checkFileExists(String fileName) {
@@ -407,7 +416,7 @@ public class Recipe implements IFCook {
     }
 
     private String getControllerName(String input) {
-        return Helper.getInstance().pluralize(this.getModelName(input)) + CONTROLLER;
+        return Helper.getInstance().pluralize(this.getModelName(input)) + CONTROLLER_SUFIX;
     }
 
     private String inputOptions(int numberMaxOptions) {
@@ -650,9 +659,13 @@ public class Recipe implements IFCook {
         return controllerPath + this.getControllerName(name) + ".php";
     }
 
-    public String getFileNameResourceRoute() {
+    public String getFileNameResourceRoute(Boolean resource) {
         String routesPath = this.path + PATH_ROUTES + File.separator;
-        return routesPath + "api.php";
+        if(resource) {
+            return routesPath + "api.php";
+        } else {
+            return routesPath + "web.php";
+        }
     }
 
     private void updateHistory(String action, String file) {
