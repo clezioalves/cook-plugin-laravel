@@ -84,7 +84,7 @@ class ${modelDesign.getControllerName()} extends Controller
         $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
         $input = $request->all();
         $${modelDesign.getModelNameVariable()}->fill($input)->save();
-        Session::flash('flash_message', 'Registro alterado salvo com sucesso!');
+        Session::flash('flash_message', 'Registro alterado com sucesso!');
         return redirect('${modelDesign.getResourceName()}');
     }
 
