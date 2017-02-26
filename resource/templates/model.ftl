@@ -63,7 +63,7 @@ class ${tableDesign.getNameModelize()} extends Model {
     /**
      * The ${attr.getManyToOne().getTableNameCollections()} that belong to the ${tableDesign.getNameSingularize()}.
      */
-    public function ${attr.getManyToOne().getTableNameSingularize()}(){
+    public function ${attr.getManyToOne().getTableNameCollections()}(){
         return $this->belongsToMany('App\Models\${attr.getManyToOne().getTableNameModelize()}','${attr.getManyToOne().getFkTableName()}','${attr.getColumnName()}','${attr.getManyToOne().getColumnName()}');
     }
 
