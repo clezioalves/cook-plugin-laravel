@@ -18,7 +18,7 @@ class ${modelDesign.getControllerName()} extends Controller
      */
     public function index()
     {
-        $${modelDesign.getModelNameVariableList()} = ${modelDesign.getModelName()}::all();
+        $${modelDesign.getModelNameVariableList()} = ${modelDesign.getModelName()}::paginate(10);
         return view('${modelDesign.getResourceName()}.index',['${modelDesign.getModelNameVariableList()}' => $${modelDesign.getModelNameVariableList()}]);
     }
 
