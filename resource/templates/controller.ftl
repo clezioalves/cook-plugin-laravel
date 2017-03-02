@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\${modelDesign.getModelName()};
 use Illuminate\Support\Facades\Session;
+use App\Http\Requests\${formRequestNameStore};
+use App\Http\Requests\${formRequestNameUpdate};
 <#list modelDesign.getListaModelImports() as modelName>
 use App\Models\${modelName};
 </#list>
@@ -29,7 +31,30 @@ class ${modelDesign.getControllerName()} extends Controller
      */
     public function create()
     {
+        <#list modelDesign.getOneToManyList() as modelRelation>
+        $${modelRelation.getModelNameVariableList()} = ${modelRelation.getModelName()}::pluck(${modelRelation.getModelName()}::$displayField,'${modelRelation.getPrimaryKey().getName()}')->toArray();
+        </#list>
+        <#list modelDesign.getOneToOneList() as modelRelation>
+        $${modelRelation.getModelNameVariableList()} = ${modelRelation.getModelName()}::pluck(${modelRelation.getModelName()}::$displayField,'${modelRelation.getPrimaryKey().getName()}')->toArray();
+        </#list>
+        <#list modelDesign.getManyToManyList() as modelRelation>
+        $${modelRelation.getModelNameVariableList()} = ${modelRelation.getModelName()}::pluck(${modelRelation.getModelName()}::$displayField,'${modelRelation.getPrimaryKey().getName()}')->toArray();
+        </#list>
+        <#if modelDesign.getOneToManyList()?size == 0 && modelDesign.getOneToOneList()?size == 0 && modelDesign.getManyToManyList()?size == 0>
         return view('${modelDesign.getResourceName()}.create');
+        <#else>
+        $view = view('${modelDesign.getResourceName()}.create');
+        <#list modelDesign.getOneToManyList() as modelRelation>
+        $view->with(compact('${modelRelation.getModelNameVariableList()}'));
+        </#list>
+        <#list modelDesign.getOneToOneList() as modelRelation>
+        $view->with(compact('${modelRelation.getModelNameVariableList()}'));
+        </#list>
+        <#list modelDesign.getManyToManyList() as modelRelation>
+        $view->with(compact('${modelRelation.getModelNameVariableList()}'));
+        </#list>
+        return $view;
+        </#if>
     }
 
     /**
@@ -38,11 +63,21 @@ class ${modelDesign.getControllerName()} extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(${formRequestNameStore} $request)
     {
-        $this->validate($request, ${modelDesign.getModelName()}::$insertRules);
         $input = $request->all();
-        ${modelDesign.getModelName()}::create($input);
+        $${modelDesign.getModelNameVariable()} = new ${modelDesign.getModelName()};
+        $${modelDesign.getModelNameVariable()}->fill($input);
+        <#list modelDesign.getOneToManyList() as modelRelation>
+        $${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()}()->associate(${modelRelation.getModelName()}::findOrFail($input['${modelRelation.getModelNameVariable()}']));
+        </#list>
+        $${modelDesign.getModelNameVariable()}->save();
+        <#list modelDesign.getManyToManyList() as modelRelation>
+        if ($input['${modelRelation.getModelNameVariableList()}'])
+        {
+            $${modelDesign.getModelNameVariable()}->${modelRelation.getModelNameVariableList()}()->sync($input['${modelRelation.getModelNameVariableList()}']);
+        }
+        </#list>
         Session::flash('flash_message', 'Registro incluído com sucesso!');
         return redirect('${modelDesign.getResourceName()}');
     }
@@ -55,7 +90,11 @@ class ${modelDesign.getControllerName()} extends Controller
      */
     public function show($id)
     {
+        <#if modelDesign.getOneToManyList()?size == 0>
         $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
+        <#else>
+        $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::<#list modelDesign.getOneToManyList() as modelRelation>with('${modelRelation.getModelNameVariable()}')-></#list>findOrFail($id);
+        </#if>
         return view('${modelDesign.getResourceName()}.details',['${modelDesign.getModelNameVariable()}' => $${modelDesign.getModelNameVariable()}]);
     }
 
@@ -68,7 +107,17 @@ class ${modelDesign.getControllerName()} extends Controller
     public function edit($id)
     {
         $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
-        return view('${modelDesign.getResourceName()}.edit',['${modelDesign.getModelNameVariable()}' => $${modelDesign.getModelNameVariable()}]);
+        <#list modelDesign.getOneToManyList() as modelRelation>
+        $${modelRelation.getModelNameVariableList()} = ${modelRelation.getModelName()}::pluck(${modelRelation.getModelName()}::$displayField,'${modelRelation.getPrimaryKey().getName()}')->toArray();
+        </#list>
+        <#if modelDesign.getOneToManyList()?size == 0>
+        return view('${modelDesign.getResourceName()}.edit')->with('${modelDesign.getModelNameVariable()}', $${modelDesign.getModelNameVariable()});
+        <#else>
+        return view('${modelDesign.getResourceName()}.edit')->with('${modelDesign.getModelNameVariable()}', $${modelDesign.getModelNameVariable()})
+        <#list modelDesign.getOneToManyList() as modelRelation>
+            ->with('${modelRelation.getModelNameVariableList()}', $${modelRelation.getModelNameVariableList()})<#if (modelRelation_index + 1) == modelDesign.getOneToManyList()?size>;</#if>
+        </#list>
+        </#if>
     }
 
     /**
@@ -78,12 +127,21 @@ class ${modelDesign.getControllerName()} extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(${formRequestNameUpdate} $request, $id)
     {
-        $this->validate($request, ${modelDesign.getModelName()}::$updateRules);
         $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
         $input = $request->all();
-        $${modelDesign.getModelNameVariable()}->fill($input)->save();
+        $${modelDesign.getModelNameVariable()}->fill($input);
+        <#list modelDesign.getOneToManyList() as modelRelation>
+        $${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()}()->associate(${modelRelation.getModelName()}::findOrFail($input['${modelRelation.getModelNameVariable()}']));
+        </#list>
+        <#list modelDesign.getManyToManyList() as modelRelation>
+        if ($input['${modelRelation.getModelNameVariableList()}'])
+        {
+            $${modelDesign.getModelNameVariable()}->${modelRelation.getModelNameVariableList()}()->sync($input['${modelRelation.getModelNameVariableList()}']);
+        }
+        </#list>
+        $${modelDesign.getModelNameVariable()}->save();
         Session::flash('flash_message', 'Registro alterado com sucesso!');
         return redirect('${modelDesign.getResourceName()}');
     }

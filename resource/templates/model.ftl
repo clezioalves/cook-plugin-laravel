@@ -7,15 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 class ${tableDesign.getNameModelize()} extends Model {
 
     protected $table = '${tableDesign.getName()}';
+
+    public static $displayField = '${tableDesign.getDisplayField()}';
+
     <#if tableDesign.getPrimaryKey()?? && tableDesign.getPrimaryKey().getName() != 'id'>
     protected $primaryKey = '${tableDesign.getPrimaryKey().getName()}';
+
     </#if>
     <#if tableDesign.getFillableAttributeNameList()?size != 0>
-    protected $fillable = [
-        <#list tableDesign.getFillableAttributeNameList() as fillableAttributeName>
-        '${fillableAttributeName}'<#if (fillableAttributeName_index + 1) < tableDesign.getFillableAttributeNameList()?size>,</#if>
-        </#list>
-    ];
+    protected $fillable = [<#list tableDesign.getFillableAttributeNameList() as fillableAttributeName>'${fillableAttributeName}'<#if (fillableAttributeName_index + 1) < tableDesign.getFillableAttributeNameList()?size>,</#if></#list>];
+
     </#if>
     <#if !tableDesign.getTimestamps()>
     public $timestamps = false;
@@ -25,7 +26,7 @@ class ${tableDesign.getNameModelize()} extends Model {
         //'field' => 'required|max:50',
     <#if tableDesign.getRuleAttributeNameList()?size != 0>
         <#list tableDesign.getRuleAttributeNameList() as ruleAttributeName>
-        '${ruleAttributeName.getAttributeName()}' => '${ruleAttributeName.getRules()}',
+        '${ruleAttributeName.getAttributeName()}' => '${ruleAttributeName.getRules()}'<#if (ruleAttributeName_index + 1) < tableDesign.getRuleAttributeNameList()?size>,</#if>
         </#list>
     </#if>
     );

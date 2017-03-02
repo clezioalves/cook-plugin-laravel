@@ -15,6 +15,8 @@ public class TableDesign {
 
     private String name;
 
+    private String displayField;
+
     private Boolean timestamps;
 
     private List<Attribute> attributeList;
@@ -92,6 +94,14 @@ public class TableDesign {
         this.timestamps = timestamps;
     }
 
+    public String getDisplayField() {
+        return displayField;
+    }
+
+    public void setDisplayField(String displayField) {
+        this.displayField = displayField;
+    }
+
     public Attribute getPrimaryKey(){
         for(Attribute attribute: this.getAttributeList()){
             if(attribute.getPrimaryKey()){
@@ -140,27 +150,13 @@ public class TableDesign {
     public List<String> getFillableAttributeNameList() {
         List<String> attributeNameList = new ArrayList<String>();
         for(Attribute attribute : this.getAttributeList()){
-            if(attribute.getName().equals(CREATED_AT) || attribute.getName().equals(UPDATED_AT)){
+            if(attribute.getName().equals(CREATED_AT) ||
+                    attribute.getName().equals(UPDATED_AT) ||
+                    this.getForeingKeyByNameColumn(attribute.getName()) != null ||
+                    attribute.getPrimaryKey()){
                 continue;
             }
-            StringBuilder rules = new StringBuilder();
-            String attributeName = null;
-            ForeingKey foreingKey = this.getForeingKeyByNameColumn(attribute.getName());
-            if(attribute.getRequired() && !attribute.getPrimaryKey()){
-                attributeName = attribute.getName();
-                if(foreingKey != null){
-                    attributeName = foreingKey.getTableNameVariable();
-                }
-                rules.append("required|");
-            }
-            if(attribute.getType().equalsIgnoreCase(Attribute.VARCHAR)){
-                rules.append("max:"+attribute.getMaxLenght()+"|");
-            }
-
-            if(attributeName != null && rules.length() > 0){
-                attributeNameList.add(attributeName);
-            }
-
+            attributeNameList.add(attribute.getName());
         }
         return attributeNameList;
     }

@@ -36,6 +36,11 @@ public class ModelDesign {
         this.manyToManyList = new ArrayList();
     }
 
+    public ModelDesign(String modelName, String columnName, Attribute attributePrimaryKey) {
+        this(modelName, columnName);
+        this.attributeList.add(attributePrimaryKey);
+    }
+
     public String getModelName() {
         return modelName;
     }

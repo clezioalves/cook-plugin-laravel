@@ -32,7 +32,7 @@ class ${modelDesign.getControllerName()} extends Controller
         $${modelDesign.getModelNameVariable()}Dto = json_decode($request->getContent());
         $${modelDesign.getModelNameVariable()} = new ${modelDesign.getModelName()};
         <#list modelDesign.getAttributeList() as attribute>
-        <#if attribute.getName() != "id" && attribute.getName() != "created_at" && attribute.getName() != "updated_at">
+        <#if !attribute.getPrimaryKey() && attribute.getName() != "created_at" && attribute.getName() != "updated_at">
         $${modelDesign.getModelNameVariable()}->${attribute.getName()} = $${modelDesign.getModelNameVariable()}Dto->${attribute.getName()};
         </#if>
         </#list>
@@ -71,7 +71,7 @@ class ${modelDesign.getControllerName()} extends Controller
         $${modelDesign.getModelNameVariable()}Dto = json_decode($request->getContent());
         $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
         <#list modelDesign.getAttributeList() as attribute>
-        <#if attribute.getName() != "id" && attribute.getName() != "created_at" && attribute.getName() != "updated_at">
+        <#if !attribute.getPrimaryKey() && attribute.getName() != "created_at" && attribute.getName() != "updated_at">
         $${modelDesign.getModelNameVariable()}->${attribute.getName()} = $${modelDesign.getModelNameVariable()}Dto->${attribute.getName()};
         </#if>
         </#list>

@@ -51,6 +51,7 @@ public class Recipe implements IFCook {
     public static final String CONTROLLER_CREATED_SUCCESSFULLY = "Controller created successfully!";
     public static final String OPERATION_CANCELED = "Operation canceled!";
     public static final String PLEASE_CONFIRM_THE_FOLLOWING_ASSOCIATIONS = "Please confirm the following associations:";
+    public static final String PLEASE_SELECT_DISPLAY_FIELD = "A displayField could not be automatically detected, so would you like to choose one?";
     public static final String BELONGS_TO_LABEL = " belongsTo ";
     public static final String HAS_ONE_LABEL = " hasOne ";
     public static final String HAS_MANY_LABEL = " hasMany ";
@@ -63,13 +64,17 @@ public class Recipe implements IFCook {
     public static final String PATH_APP = "app";
     public static final String PATH_MODEL = "Models";
     public static final String PATH_CONTROLLER = "Http" + File.separator + "Controllers";
+    public static final String PATH_REQUESTS = "Http" + File.separator + "Requests";
     public static final String CONTROLLER_SUFIX = "Controller";
     //public static final String REGEX_EXTRACT_RELATIONSHIPS = ".*->(\\w+)\\('(.*\\\\([^\\.]+))'\\);";
     public static final String REGEX_EXTRACT_RELATIONSHIPS = "public function (\\w+).*"+System.lineSeparator()+".*(->(\\w+)\\('(.*\\\\([\\w+]+))').*;";
+    public static final String REGEX_EXTRACT_PRIMARYKEY = ".*primaryKey.*'(.*)'";
     public static final String BELONGS_TO = "belongsTo";
     public static final String BELONGS_TO_MANY = "belongsToMany";
     public static final String HAS_ONE = "hasOne";
     public static final String HAS_MANY = "hasMany";
+    public static final String NOME = "nome";
+    public static final String NAME = "name";
     private static final String PATH_ROUTES = "routes";
     private static final String CREATED = "Created";
     private static final String UPDATED = "Updated";
@@ -225,7 +230,7 @@ public class Recipe implements IFCook {
             TableDesign tableDesign = getTableDesign(tableName);
 
             //
-            String fileName = getFileNameModel(tableDesign.getName());
+            String fileName = getFileNameModelByTableName(tableDesign.getName());
             Boolean generateFile = checkFileExists(fileName);
             if(generateFile) {
                 FreemarkerWrapper.getInstance().addVar("tableDesign", tableDesign);
@@ -265,14 +270,39 @@ public class Recipe implements IFCook {
             if(generateFile) {
                 FreemarkerWrapper.getInstance().addVar("modelDesign", modelDesign);
                 String content = null;
+                String formRequestNameStore = null;
+                String formRequestNameUpdate = null;
                 if(resource) {
                     content = FreemarkerWrapper.getInstance().parseTemplate("controller-resource.ftl");
                 }else{
+                    formRequestNameStore = modelDesign.getModelName() + "StoreRequest";
+                    formRequestNameUpdate = modelDesign.getModelName() + "UpdateRequest";
+                    FreemarkerWrapper.getInstance().addVar("formRequestNameStore", formRequestNameStore);
+                    FreemarkerWrapper.getInstance().addVar("formRequestNameUpdate", formRequestNameUpdate);
                     content = FreemarkerWrapper.getInstance().parseTemplate("controller.ftl");
                 }
                 createResourceRoute(modelDesign, resource);
                 FileUtilPlugin.saveToPath(fileName, content);
                 this.updateHistory(CREATED, fileName);
+                if(!resource) {
+                    FreemarkerWrapper.getInstance().addVar("modelDesignName", modelDesign.getModelName());
+
+                    //StoreForm
+                    fileName = getFileNameRequest(formRequestNameStore);
+                    FreemarkerWrapper.getInstance().addVar("formRequestName", formRequestNameStore);
+                    FreemarkerWrapper.getInstance().addVar("rules", "$insertRules");
+                    content = FreemarkerWrapper.getInstance().parseTemplate("form-request.ftl");
+                    FileUtilPlugin.saveToPath(fileName, content);
+                    this.updateHistory(CREATED, fileName);
+
+                    //UpdateForm
+                    fileName = getFileNameRequest(formRequestNameUpdate);
+                    FreemarkerWrapper.getInstance().addVar("formRequestName", formRequestNameUpdate);
+                    FreemarkerWrapper.getInstance().addVar("rules", "$updateRules");
+                    content = FreemarkerWrapper.getInstance().parseTemplate("form-request.ftl");
+                    FileUtilPlugin.saveToPath(fileName, content);
+                    this.updateHistory(CREATED, fileName);
+                }
                 out.setResultProcess(ResultProcess.SUCESS, CONTROLLER_CREATED_SUCCESSFULLY);
             }else{
                 out.setResultProcess(ResultProcess.WARNING, OPERATION_CANCELED);
@@ -370,6 +400,23 @@ public class Recipe implements IFCook {
                 }
             }
         }
+        String displayField = null;
+        for(Attribute attribute : tableDesign.getAttributeList()) {
+            if(attribute.getName().equalsIgnoreCase(NAME) || attribute.getName().equalsIgnoreCase(NOME)){
+                displayField = attribute.getName();
+                break;
+            }
+        }
+        if(displayField == null){
+            PrintUtilPlugin.outn(PLEASE_SELECT_DISPLAY_FIELD);
+            int cont = 0;
+            for(Attribute attribute : tableDesign.getAttributeList()) {
+                PrintUtilPlugin.printLineYellow("[" + (cont++) + "] " + attribute.getName());
+            }
+            option = this.inputOptions(tableDesign.getAttributeList().size());
+            displayField = tableDesign.getAttributeList().get(Integer.valueOf(option)).getName();
+        }
+        tableDesign.setDisplayField(displayField);
         return tableDesign;
     }
 
@@ -389,21 +436,34 @@ public class Recipe implements IFCook {
     private ModelDesign getModelDesign(String tableName) throws Exception {
         ModelDesign modelDesign = new ModelDesign(getModelName(tableName),"Teste");
         modelDesign.setAttributeList(getAttributeControllerList(tableName));
-        String modelContent = readFile(getFileNameModel(tableName));
+        String modelContent = readFile(getFileNameModelByTableName(tableName));
         Pattern p = Pattern.compile(REGEX_EXTRACT_RELATIONSHIPS);
         Matcher m = p.matcher(modelContent);
         while (m.find()) {
             String attributeName = m.group(1);
             String relationType = m.group(3);
             String simpleNameModel = m.group(5);
+
+            String modelContentAssociation = readFile(getFileNameModelByModelName(simpleNameModel));
+
+            Pattern p2 = Pattern.compile(REGEX_EXTRACT_PRIMARYKEY);
+            Matcher m2 = p2.matcher(modelContentAssociation);
+            String primaryKey = "id";
+            if(m2.find()){
+                primaryKey = m2.group(1);
+            }
+
+            Attribute attributePrimaryKey = new Attribute(primaryKey);
+            attributePrimaryKey.setPrimaryKey(Boolean.TRUE);
+
             if(BELONGS_TO.equals(relationType)){
-                modelDesign.getOneToManyList().add(new ModelDesign(simpleNameModel, attributeName));
+                modelDesign.getOneToManyList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey));
             }else if(BELONGS_TO_MANY.equals(relationType)){
-                modelDesign.getManyToManyList().add(new ModelDesign(simpleNameModel, attributeName));
+                modelDesign.getManyToManyList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey));
             }else if(HAS_ONE.equals(relationType)){
-                modelDesign.getOneToOneList().add(new ModelDesign(simpleNameModel, attributeName));
+                modelDesign.getOneToOneList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey));
             }else if(HAS_MANY.equals(relationType)){
-                modelDesign.getManyToOneList().add(new ModelDesign(simpleNameModel, attributeName));
+                modelDesign.getManyToOneList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey));
             }else{
                 continue;
             }
@@ -498,7 +558,7 @@ public class Recipe implements IFCook {
         }
 
         for(String tableName : tableListTmp){
-            if(new File(getFileNameModel(tableName)).exists()) {
+            if(new File(getFileNameModelByTableName(tableName)).exists()) {
                 tableList.add(tableName);
             }
         }
@@ -534,6 +594,7 @@ public class Recipe implements IFCook {
     private List<Attribute> getAttributeControllerList(String tableName) throws SQLException, ClassNotFoundException {
         List<Attribute>  attributeList = getAttributeList(tableName);
         Set<Attribute> attributeListRemove = new HashSet();
+
         for (ForeingKey fk : this.getManyToOneList(tableName)) {
             for(Attribute attribute : attributeList){
                 if(fk.getColumnName().equals(attribute.getName())){
@@ -649,14 +710,24 @@ public class Recipe implements IFCook {
         return new String(Files.readAllBytes(Paths.get(filename)));
     }
 
-    private String getFileNameModel(String name) {
+    private String getFileNameModelByTableName(String name) {
         String modelPath = this.path + PATH_APP + File.separator + PATH_MODEL + File.separator;
         return modelPath + this.getModelName(name) + ".php";
+    }
+
+    private String getFileNameModelByModelName(String name) {
+        String modelPath = this.path + PATH_APP + File.separator + PATH_MODEL + File.separator;
+        return modelPath + name + ".php";
     }
 
     private String getFileNameController(String name) {
         String controllerPath = this.path + PATH_APP + File.separator + PATH_CONTROLLER + File.separator;
         return controllerPath + this.getControllerName(name) + ".php";
+    }
+
+    private String getFileNameRequest(String name) {
+        String controllerPath = this.path + PATH_APP + File.separator + PATH_REQUESTS + File.separator;
+        return controllerPath + name + ".php";
     }
 
     public String getFileNameResourceRoute(Boolean resource) {
