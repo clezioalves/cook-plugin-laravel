@@ -12,6 +12,7 @@ public class TableDesign {
 
     public static final String CREATED_AT = "created_at";
     public static final String UPDATED_AT = "updated_at";
+    public static final String DATE = "date";
 
     private String name;
 
@@ -159,6 +160,16 @@ public class TableDesign {
             attributeNameList.add(attribute.getName());
         }
         return attributeNameList;
+    }
+
+    public List<Attribute> getAttributeDatesList() {
+        List<Attribute> attributeDatesList = new ArrayList<Attribute>();
+        for(Attribute attribute : getAttributeList()){
+            if(attribute.getType().equalsIgnoreCase(DATE)){
+                attributeDatesList.add(attribute);
+            }
+        }
+        return attributeDatesList;
     }
 
 

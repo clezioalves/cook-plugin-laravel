@@ -18,6 +18,13 @@ class ${tableDesign.getNameModelize()} extends Model {
     protected $fillable = [<#list tableDesign.getFillableAttributeNameList() as fillableAttributeName>'${fillableAttributeName}'<#if (fillableAttributeName_index + 1) < tableDesign.getFillableAttributeNameList()?size>,</#if></#list>];
 
     </#if>
+    <#if tableDesign.getAttributeDatesList()?size != 0>
+    public function getDates()
+    {
+        return [<#list tableDesign.getAttributeDatesList() as fillableAttributeName>'${fillableAttributeName}'<#if (fillableAttributeName_index + 1) < tableDesign.getAttributeDatesList()?size>,</#if></#list>];
+    }
+
+    </#if>
     <#if !tableDesign.getTimestamps()>
     public $timestamps = false;
     </#if>
