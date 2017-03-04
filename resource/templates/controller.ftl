@@ -68,7 +68,7 @@ class ${modelDesign.getControllerName()} extends Controller
         $input = $request->all();
         $${modelDesign.getModelNameVariable()} = new ${modelDesign.getModelName()};
         $${modelDesign.getModelNameVariable()}->fill($input);
-        <#list modelDesign.getOneToManyList() as modelRelation>
+        <#list modelDesign.getManyToOneList() as modelRelation>
         $${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()}()->associate(${modelRelation.getModelName()}::findOrFail($input['${modelRelation.getModelNameVariable()}']));
         </#list>
         $${modelDesign.getModelNameVariable()}->save();
@@ -90,10 +90,10 @@ class ${modelDesign.getControllerName()} extends Controller
      */
     public function show($id)
     {
-        <#if modelDesign.getOneToManyList()?size == 0>
+        <#if modelDesign.getManyToOneList()?size == 0>
         $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
         <#else>
-        $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::<#list modelDesign.getOneToManyList() as modelRelation>with('${modelRelation.getModelNameVariable()}')-></#list>findOrFail($id);
+        $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::<#list modelDesign.getManyToOneList() as modelRelation>with('${modelRelation.getModelNameVariable()}')-></#list>findOrFail($id);
         </#if>
         return view('${modelDesign.getResourceName()}.details',['${modelDesign.getModelNameVariable()}' => $${modelDesign.getModelNameVariable()}]);
     }
@@ -107,15 +107,15 @@ class ${modelDesign.getControllerName()} extends Controller
     public function edit($id)
     {
         $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
-        <#list modelDesign.getOneToManyList() as modelRelation>
+        <#list modelDesign.getManyToOneList() as modelRelation>
         $${modelRelation.getModelNameVariableList()} = ${modelRelation.getModelName()}::pluck(${modelRelation.getModelName()}::$displayField,'${modelRelation.getPrimaryKey().getName()}')->toArray();
         </#list>
-        <#if modelDesign.getOneToManyList()?size == 0>
+        <#if modelDesign.getManyToOneList()?size == 0>
         return view('${modelDesign.getResourceName()}.edit')->with('${modelDesign.getModelNameVariable()}', $${modelDesign.getModelNameVariable()});
         <#else>
         return view('${modelDesign.getResourceName()}.edit')->with('${modelDesign.getModelNameVariable()}', $${modelDesign.getModelNameVariable()})
-        <#list modelDesign.getOneToManyList() as modelRelation>
-            ->with('${modelRelation.getModelNameVariableList()}', $${modelRelation.getModelNameVariableList()})<#if (modelRelation_index + 1) == modelDesign.getOneToManyList()?size>;</#if>
+        <#list modelDesign.getManyToOneList() as modelRelation>
+            ->with('${modelRelation.getModelNameVariableList()}', $${modelRelation.getModelNameVariableList()})<#if (modelRelation_index + 1) == modelDesign.getManyToOneList()?size>;</#if>
         </#list>
         </#if>
     }
@@ -132,8 +132,8 @@ class ${modelDesign.getControllerName()} extends Controller
         $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
         $input = $request->all();
         $${modelDesign.getModelNameVariable()}->fill($input);
-        <#list modelDesign.getOneToManyList() as modelRelation>
-        $${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()}()->associate(${modelRelation.getModelName()}::findOrFail($input['${modelRelation.getModelNameVariable()}']));
+        <#list modelDesign.getManyToOneList() as modelRelation>
+        $${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()}()->associate(${modelRelation.getModelName()}::findOrFail($input['${modelRelation.getColumnName()}']));
         </#list>
         <#list modelDesign.getManyToManyList() as modelRelation>
         if ($input['${modelRelation.getModelNameVariableList()}'])

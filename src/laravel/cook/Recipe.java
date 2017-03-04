@@ -457,13 +457,13 @@ public class Recipe implements IFCook {
             attributePrimaryKey.setPrimaryKey(Boolean.TRUE);
 
             if(BELONGS_TO.equals(relationType)){
-                modelDesign.getOneToManyList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey));
+                modelDesign.getManyToOneList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey));
             }else if(BELONGS_TO_MANY.equals(relationType)){
                 modelDesign.getManyToManyList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey));
             }else if(HAS_ONE.equals(relationType)){
                 modelDesign.getOneToOneList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey));
             }else if(HAS_MANY.equals(relationType)){
-                modelDesign.getManyToOneList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey));
+                modelDesign.getOneToManyList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey));
             }else{
                 continue;
             }
