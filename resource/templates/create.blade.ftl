@@ -4,7 +4,7 @@
 
 <a class="btn btn-primary" href="{{ url('${modelDesign.getResourceName()}') }}">
     <span class="glyphicon glyphicon-arrow-left"></span>
-    Voltar
+    <#if lang == 'en'>Back<#else>Voltar</#if>
 </a>
 
 <fieldset>
@@ -41,7 +41,7 @@
                 {!! Form::select('${modelRelation.getModelNameVariableList()}[]',$${modelRelation.getModelNameVariableList()},null,['multiple'=>'multiple','class'=>'form-control']); !!}
             </div>
             </#list>
-            {!! Form::submit('Salvar',['class'=>'btn btn-primary']) !!}
+            {!! Form::submit('<#if lang == 'en'>Save<#else>Salvar</#if>',['class'=>'btn btn-primary']) !!}
             {!! Form::close() !!}
         </div>
     </div>

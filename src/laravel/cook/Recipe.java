@@ -349,8 +349,7 @@ public class Recipe implements IFCook {
                 String tableName = tableList.get(Integer.valueOf(option));
                 ModelDesign modelDesign = getModelDesign(tableName);
                 FreemarkerWrapper.getInstance().addVar("modelDesign", modelDesign);
-                String dateFormat = Helper.getInstance().getLang().equals(Inflector.PT_BR) ? "d/m/Y" : "Y-m-d";
-                FreemarkerWrapper.getInstance().addVar("dateFormat", dateFormat);
+                FreemarkerWrapper.getInstance().addVar("lang", Helper.getInstance().getLang());
                 String content = null;
 
                 List<TemplateViewEnum> templateViewEnumList = Arrays.asList(TemplateViewEnum.values());

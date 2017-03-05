@@ -4,7 +4,7 @@
 
 <a class="btn btn-primary" href="{{ url('${modelDesign.getResourceName()}') }}">
     <span class="glyphicon glyphicon-arrow-left"></span>
-    Voltar
+    <#if lang == 'en'>Back<#else>Voltar</#if>
 </a>
 
 <fieldset>
@@ -19,7 +19,7 @@
                 <div class="form-group">
                     <dt>${attribute.getNameHumanize()}</dt>
                     <#if attribute.isDateType()>
-                    <dd>{!! $${modelDesign.getModelNameVariable()}->${attribute.getName()}->format('${dateFormat}') !!}</dd>
+                    <dd>{!! $${modelDesign.getModelNameVariable()}->${attribute.getName()}->format('<#if lang == "en">Y-m-d<#else>d/m/Y</#if>') !!}</dd>
                     <#else>
                     <dd>{!! $${modelDesign.getModelNameVariable()}->${attribute.getName()} !!}</dd>
                     </#if>

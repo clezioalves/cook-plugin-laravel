@@ -21,7 +21,7 @@
                 <#list modelDesign.getManyToOneList() as modelRelation>
                 <th>${modelRelation.getModelNameHumanizeSingularize()}</th>
                 </#list>
-                <th width="25%">Ação</th>
+                <th width="25%"><#if lang == 'en'>Action<#else>Ação</#if></th>
             </tr>
             </thead>
             <tbody>
@@ -40,14 +40,14 @@
                 <td>
                     <a class="btn btn-success" href="{{ route('${modelDesign.getResourceName()}.edit', $${modelDesign.getModelNameVariable()}->${modelDesign.getPrimaryKey()}) }}" style="float: left;">
                         <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
-                        Editar
+                        <#if lang == 'en'>Edit<#else>Editar</#if>
                     </a>
                     <form action="{{ route('${modelDesign.getResourceName()}.destroy', $${modelDesign.getModelNameVariable()}->${modelDesign.getPrimaryKey()}) }}" method="POST" style="float: left; margin-left: 5px;">
                         <input type="hidden" name="_method" value="delete">
                         <input type="hidden" name="_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-danger">
                             <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
-                            Excluir
+                            <#if lang == 'en'>Delete<#else>Excluir</#if>
                         </button>
                     </form>
                 </td>
