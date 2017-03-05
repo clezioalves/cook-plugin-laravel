@@ -16,6 +16,8 @@ public class ModelDesign {
 
     private String columnName;
 
+    private String displayField;
+
     private List<Attribute> attributeList;
 
     private List<ModelDesign> manyToOneList;
@@ -26,9 +28,8 @@ public class ModelDesign {
 
     private List<ModelDesign> manyToManyList;
 
-    public ModelDesign(String modelName, String columnName) {
+    public ModelDesign(String modelName) {
         this.modelName = modelName;
-        this.columnName = columnName;
         this.attributeList = new ArrayList();
         this.manyToOneList = new ArrayList();
         this.oneToManyList = new ArrayList();
@@ -36,9 +37,11 @@ public class ModelDesign {
         this.manyToManyList = new ArrayList();
     }
 
-    public ModelDesign(String modelName, String columnName, Attribute attributePrimaryKey) {
-        this(modelName, columnName);
+    public ModelDesign(String modelName, String columnName, Attribute attributePrimaryKey, String displayField) {
+        this(modelName);
+        this.columnName = columnName;
         this.attributeList.add(attributePrimaryKey);
+        this.displayField = displayField;
     }
 
     public String getModelName() {
@@ -97,12 +100,30 @@ public class ModelDesign {
         this.columnName = columnName;
     }
 
+    public String getDisplayField() {
+        return displayField;
+    }
+
+    public void setDisplayField(String displayField) {
+        this.displayField = displayField;
+    }
+
     public String getControllerName(){
         return getControllerSimpleName() + "Controller";
     }
 
     public String getControllerSimpleName(){
         return Helper.getInstance().pluralize(this.getModelName());
+    }
+
+    public String getModelNameHumanize(){
+        return Helper.getInstance().humanize(Helper.getInstance().pluralize(this.getModelName()));
+    }
+
+    public String getModelNameHumanizeSingularize(){
+        return Helper.getInstance().singularize(Helper.getInstance().humanize(
+                Helper.getInstance().pluralize(this.getModelName()
+                )));
     }
 
     public String getModelNameVariable(){

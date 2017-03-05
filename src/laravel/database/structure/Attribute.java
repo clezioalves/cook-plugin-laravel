@@ -1,5 +1,7 @@
 package laravel.database.structure;
 
+import laravel.cook.Helper;
+
 /**
  * Created by clezio on 19/08/16.
  */
@@ -87,6 +89,14 @@ public class Attribute {
 
     public void setDisplayField(Boolean displayField) {
         this.displayField = displayField;
+    }
+
+    public String getNameHumanize(){
+        return Helper.getInstance().humanize(this.getName());
+    }
+
+    public Boolean isDateType(){
+        return getType().equalsIgnoreCase("date");
     }
 
     @Override

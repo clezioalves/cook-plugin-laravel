@@ -31,7 +31,7 @@ class ${modelDesign.getControllerName()} extends Controller
      */
     public function create()
     {
-        <#list modelDesign.getOneToManyList() as modelRelation>
+        <#list modelDesign.getManyToOneList() as modelRelation>
         $${modelRelation.getModelNameVariableList()} = ${modelRelation.getModelName()}::pluck(${modelRelation.getModelName()}::$displayField,'${modelRelation.getPrimaryKey().getName()}')->toArray();
         </#list>
         <#list modelDesign.getOneToOneList() as modelRelation>
@@ -40,11 +40,11 @@ class ${modelDesign.getControllerName()} extends Controller
         <#list modelDesign.getManyToManyList() as modelRelation>
         $${modelRelation.getModelNameVariableList()} = ${modelRelation.getModelName()}::pluck(${modelRelation.getModelName()}::$displayField,'${modelRelation.getPrimaryKey().getName()}')->toArray();
         </#list>
-        <#if modelDesign.getOneToManyList()?size == 0 && modelDesign.getOneToOneList()?size == 0 && modelDesign.getManyToManyList()?size == 0>
+        <#if modelDesign.getManyToOneList()?size == 0 && modelDesign.getOneToOneList()?size == 0 && modelDesign.getManyToManyList()?size == 0>
         return view('${modelDesign.getResourceName()}.create');
         <#else>
         $view = view('${modelDesign.getResourceName()}.create');
-        <#list modelDesign.getOneToManyList() as modelRelation>
+        <#list modelDesign.getManyToOneList() as modelRelation>
         $view->with(compact('${modelRelation.getModelNameVariableList()}'));
         </#list>
         <#list modelDesign.getOneToOneList() as modelRelation>
@@ -73,7 +73,7 @@ class ${modelDesign.getControllerName()} extends Controller
         </#list>
         $${modelDesign.getModelNameVariable()}->save();
         <#list modelDesign.getManyToManyList() as modelRelation>
-        if ($input['${modelRelation.getModelNameVariableList()}'])
+        if (!empty($input['${modelRelation.getModelNameVariableList()}']))
         {
             $${modelDesign.getModelNameVariable()}->${modelRelation.getModelNameVariableList()}()->sync($input['${modelRelation.getModelNameVariableList()}']);
         }
@@ -107,17 +107,27 @@ class ${modelDesign.getControllerName()} extends Controller
     public function edit($id)
     {
         $${modelDesign.getModelNameVariable()} = ${modelDesign.getModelName()}::findOrFail($id);
+        $view = view('${modelDesign.getResourceName()}.edit');
+        $view->with(compact('${modelDesign.getModelNameVariable()}'));
         <#list modelDesign.getManyToOneList() as modelRelation>
         $${modelRelation.getModelNameVariableList()} = ${modelRelation.getModelName()}::pluck(${modelRelation.getModelName()}::$displayField,'${modelRelation.getPrimaryKey().getName()}')->toArray();
         </#list>
-        <#if modelDesign.getManyToOneList()?size == 0>
-        return view('${modelDesign.getResourceName()}.edit')->with('${modelDesign.getModelNameVariable()}', $${modelDesign.getModelNameVariable()});
-        <#else>
-        return view('${modelDesign.getResourceName()}.edit')->with('${modelDesign.getModelNameVariable()}', $${modelDesign.getModelNameVariable()})
-        <#list modelDesign.getManyToOneList() as modelRelation>
-            ->with('${modelRelation.getModelNameVariableList()}', $${modelRelation.getModelNameVariableList()})<#if (modelRelation_index + 1) == modelDesign.getManyToOneList()?size>;</#if>
+        <#list modelDesign.getOneToOneList() as modelRelation>
+        $${modelRelation.getModelNameVariableList()} = ${modelRelation.getModelName()}::pluck(${modelRelation.getModelName()}::$displayField,'${modelRelation.getPrimaryKey().getName()}')->toArray();
         </#list>
-        </#if>
+        <#list modelDesign.getManyToManyList() as modelRelation>
+        $${modelRelation.getModelNameVariableList()} = ${modelRelation.getModelName()}::pluck(${modelRelation.getModelName()}::$displayField,'${modelRelation.getPrimaryKey().getName()}')->toArray();
+        </#list>
+        <#list modelDesign.getManyToOneList() as modelRelation>
+        $view->with(compact('${modelRelation.getModelNameVariableList()}'));
+        </#list>
+        <#list modelDesign.getOneToOneList() as modelRelation>
+        $view->with(compact('${modelRelation.getModelNameVariableList()}'));
+        </#list>
+        <#list modelDesign.getManyToManyList() as modelRelation>
+        $view->with(compact('${modelRelation.getModelNameVariableList()}'));
+        </#list>
+        return $view;
     }
 
     /**
@@ -136,7 +146,7 @@ class ${modelDesign.getControllerName()} extends Controller
         $${modelDesign.getModelNameVariable()}->${modelRelation.getColumnName()}()->associate(${modelRelation.getModelName()}::findOrFail($input['${modelRelation.getColumnName()}']));
         </#list>
         <#list modelDesign.getManyToManyList() as modelRelation>
-        if ($input['${modelRelation.getModelNameVariableList()}'])
+        if(!empty($input['${modelRelation.getModelNameVariableList()}']))
         {
             $${modelDesign.getModelNameVariable()}->${modelRelation.getModelNameVariableList()}()->sync($input['${modelRelation.getModelNameVariableList()}']);
         }

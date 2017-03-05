@@ -70,7 +70,7 @@ class ${tableDesign.getNameModelize()} extends Model {
      * Get the ${attr.getTableNameCollections()} for the ${tableDesign.getNameSingularize()}.
      */
     public function ${attr.getTableNameCollections()}(){
-        return $this->hasMany('App\Models\${attr.getTableNameModelize()}','${attr.getPkColumnName()}','${attr.getColumnName()}');
+        return $this->hasMany('App\Models\${attr.getTableNameModelize()}','${attr.getColumnName()}','${attr.getPkColumnName()}');
     }
 
     </#list>

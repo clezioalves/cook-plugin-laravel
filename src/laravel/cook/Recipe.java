@@ -17,14 +17,10 @@ import laravel.utils.PrintUtilPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,6 +32,7 @@ public class Recipe implements IFCook {
     public static final String MODEL = "model";
     public static final String CONTROLLER_REST = "controller-rest";
     public static final String CONTROLLER = "controller";
+    public static final String TEMPLATE = "template";
     public static final String ARTISAN_FILE = "artisan";
 
     public static final String DATABASE_CONFIG_FILE = ".env";
@@ -45,10 +42,12 @@ public class Recipe implements IFCook {
     public static final String ENTER_A_NUMBER_FROM_THE_LIST_ABOVE_OR_Q_TO_EXIT = "Enter a number from the list above, or 'q' to exit: ";
     public static final String POSSIBLE_MODELS_BASED_ON_CURRENT_DATABASE_DEFINED_IN_FILE_ENV = "Possible Models based on current database defined in file \".env\"";
     public static final String POSSIBLE_CONTROLLERS_BASED_ON_CURRENT_DATABASE_DEFINED_IN_FILE_ENV = "Possible Controllers based on current database defined in file \".env\"";
+    public static final String POSSIBLE_TEMPLATES_BASED_ON_CURRENT_DATABASE_DEFINED_IN_FILE_ENV = "Possible Templates based on current database defined in file \".env\"";
     public static final String INVALID_OPTION = "Invalid option";
     public static final String TABLE = "TABLE";
     public static final String MODEL_CREATED_SUCCESSFULLY = "Model created successfully!";
     public static final String CONTROLLER_CREATED_SUCCESSFULLY = "Controller created successfully!";
+    public static final String TEMPLATES_CREATED_SUCCESSFULLY = "Templates created successfully!";
     public static final String OPERATION_CANCELED = "Operation canceled!";
     public static final String PLEASE_CONFIRM_THE_FOLLOWING_ASSOCIATIONS = "Please confirm the following associations:";
     public static final String PLEASE_SELECT_DISPLAY_FIELD = "A displayField could not be automatically detected, so would you like to choose one?";
@@ -65,10 +64,11 @@ public class Recipe implements IFCook {
     public static final String PATH_MODEL = "Models";
     public static final String PATH_CONTROLLER = "Http" + File.separator + "Controllers";
     public static final String PATH_REQUESTS = "Http" + File.separator + "Requests";
+    public static final String PATH_CONFIG = "config";
     public static final String CONTROLLER_SUFIX = "Controller";
-    //public static final String REGEX_EXTRACT_RELATIONSHIPS = ".*->(\\w+)\\('(.*\\\\([^\\.]+))'\\);";
     public static final String REGEX_EXTRACT_RELATIONSHIPS = "public function (\\w+).*"+System.lineSeparator()+".*(->(\\w+)\\('(.*\\\\([\\w+]+))').*;";
     public static final String REGEX_EXTRACT_PRIMARYKEY = ".*primaryKey.*'(.*)'";
+    public static final String REGEX_EXTRACT_DISPLAY_FIELD = ".*displayField.*'(.*)'";
     public static final String BELONGS_TO = "belongsTo";
     public static final String BELONGS_TO_MANY = "belongsToMany";
     public static final String HAS_ONE = "hasOne";
@@ -78,6 +78,14 @@ public class Recipe implements IFCook {
     private static final String PATH_ROUTES = "routes";
     private static final String CREATED = "Created";
     private static final String UPDATED = "Updated";
+    private static final String PATH_VENDOR = "vendor";
+    private static final String PATH_LARAVEL_COLLECTIVE = "laravelcollective";
+    private static final String PATH_HTML = "html";
+    private static final String PATH_RESOURCES = "resources";
+    private static final String PATH_VIEW = "views";
+    public static final String RESOURCES_TEMPLATE_BOOTSTRAP1_ZIP = "https://github.com/clezioalves/cook-plugin-laravel/raw/master/others-resources/template-bootstrap1.zip";
+    public static final String DOWNLOAD_ADDITIONAL_RESOURCE = "Downloading additional resource";
+    private static final java.lang.String REGEX_EXTRACT_ITEM_MENU = "(.*)(<!--.*inject:itemMenu.*-->)";
 
     private IDatabase database;
 
@@ -89,20 +97,20 @@ public class Recipe implements IFCook {
 
     private List<String> changeHistory;
 
-    /*public static void main(String args[]) throws Exception {
+    public static void main(String args[]) throws Exception {
         Helper.getInstance().configureInflector(Inflector.PT_BR);
         Recipe r = new Recipe();
-        String modelContent = r.readFile("C:\\dev\\laravel_projects\\sportal\\app\\Models\\Setor.php");
-        Pattern p = Pattern.compile(REGEX_EXTRACT_RELATIONSHIPS);
-        Matcher m = p.matcher(modelContent);
-        System.out.println("m: " + m.groupCount());
-        while (m.find()) {
-            String attributeName = m.group(1);
-            String relationType = m.group(3);
-            String simpleNameModel = m.group(5);
-            System.out.println("simpleNameModel: "+simpleNameModel+" relationType: "+relationType+" attributeName: "+attributeName);
+        String routesFileContent = r.readFile("C:\\dev\\xampp\\htdocs\\glaravel2\\resources\\views\\app.blade.php");
+        System.out.println(routesFileContent);
+//        Pattern p = Pattern.compile("(.*)(<!--inject:itemMenu-->)");
+        Pattern p = Pattern.compile("(.*)(<!--.*inject:itemMenu.*-->)");
+        Matcher m = p.matcher(routesFileContent);
+        System.out.println(m.groupCount());
+        if (m.find()) {
+            System.out.println(m.group(1));
+            System.out.println(m.group(2));
         }
-    }*/
+    }
 
     public Recipe(){
         changeHistory = new ArrayList<String>();
@@ -132,8 +140,9 @@ public class Recipe implements IFCook {
         PrintUtil.outn("Available actions:");
         PrintUtil.outn("~~~~~~~~~~~~~~~~~~");
         PrintUtil.outn(MODEL);
-        PrintUtil.outn(CONTROLLER);
         PrintUtil.outn(CONTROLLER_REST);
+        PrintUtil.outn(CONTROLLER);
+        PrintUtil.outn(TEMPLATE);
     }
 
     @Override
@@ -145,8 +154,9 @@ public class Recipe implements IFCook {
             return false;
         }
         if(!(param[1].toLowerCase().equals(MODEL) ||
+                param[1].toLowerCase().equals(CONTROLLER_REST) ||
                 param[1].toLowerCase().equals(CONTROLLER) ||
-                param[1].toLowerCase().equals(CONTROLLER_REST))){
+                param[1].toLowerCase().equals(TEMPLATE))){
             printHelp();
             PrintUtil.outn("");
             return false;
@@ -194,6 +204,8 @@ public class Recipe implements IFCook {
                 resultProcess = this.buildController(Boolean.FALSE);
             } else if (this.action.equals(CONTROLLER_REST)) {
                 resultProcess = this.buildController(Boolean.TRUE);
+            } else if (this.action.equals(TEMPLATE)) {
+                resultProcess = this.buildTemplate();
             } else {
                 resultProcess.setResultProcess(ResultProcess.ERROR, "Action not found");
             }
@@ -231,7 +243,7 @@ public class Recipe implements IFCook {
 
             //
             String fileName = getFileNameModelByTableName(tableDesign.getName());
-            Boolean generateFile = checkFileExists(fileName);
+            Boolean generateFile = checkConfirmFileExists(fileName);
             if(generateFile) {
                 FreemarkerWrapper.getInstance().addVar("tableDesign", tableDesign);
                 String content = FreemarkerWrapper.getInstance().parseTemplate("model.ftl");
@@ -266,7 +278,7 @@ public class Recipe implements IFCook {
             ModelDesign modelDesign = getModelDesign(tableName);
 
             String fileName = getFileNameController(tableName);
-            Boolean generateFile = checkFileExists(fileName);
+            Boolean generateFile = checkConfirmFileExists(fileName);
             if(generateFile) {
                 FreemarkerWrapper.getInstance().addVar("modelDesign", modelDesign);
                 String content = null;
@@ -315,6 +327,97 @@ public class Recipe implements IFCook {
         return out;
     }
 
+    public ResultProcess buildTemplate() {
+        ResultProcess out = new ResultProcess();
+        try {
+            System.out.println(getFileNameLaravelCollective());
+            Boolean fileLaravelCollectiveExists = checkFileExists(getFileNameLaravelCollective());
+            if(!fileLaravelCollectiveExists){
+                String message = this.getMessageComponentLaravelCollective();
+                out.setResultProcess(ResultProcess.ERROR, message);
+            }else {
+                configureInflector();
+                List<String> tableList = getTableListWithModel();
+
+                PrintUtilPlugin.outn(POSSIBLE_TEMPLATES_BASED_ON_CURRENT_DATABASE_DEFINED_IN_FILE_ENV);
+                //Controllers list
+                int cont = 0;
+                for (String table : tableList) {
+                    PrintUtilPlugin.printLineYellow("[" + (cont++) + "] " + this.getModelName(table));
+                }
+                String option = this.inputOptions(cont);
+                String tableName = tableList.get(Integer.valueOf(option));
+                ModelDesign modelDesign = getModelDesign(tableName);
+                FreemarkerWrapper.getInstance().addVar("modelDesign", modelDesign);
+                String dateFormat = Helper.getInstance().getLang().equals(Inflector.PT_BR) ? "d/m/Y" : "Y-m-d";
+                FreemarkerWrapper.getInstance().addVar("dateFormat", dateFormat);
+                String content = null;
+
+                List<TemplateViewEnum> templateViewEnumList = Arrays.asList(TemplateViewEnum.values());
+                for(TemplateViewEnum templateViewEnum : templateViewEnumList) {
+                    String fileName = getFileNameTemplate(modelDesign.getResourceName(), templateViewEnum.getValor() + ".php");
+                    Boolean generateFile = checkConfirmFileExists(fileName);
+                    if(generateFile) {
+                        content = FreemarkerWrapper.getInstance().parseTemplate(templateViewEnum.getValor() + ".ftl");
+                        FileUtilPlugin.saveToPath(fileName, content);
+                        this.updateHistory(CREATED, fileName);
+                    }
+                }
+
+                String fileNameAppBlade = getFileNameAppBlade();
+                if(!FileUtil.fileExist(fileNameAppBlade)) {
+                    PrintUtilPlugin.outn(DOWNLOAD_ADDITIONAL_RESOURCE);
+                    FileUtilPlugin.importTemplate(RESOURCES_TEMPLATE_BOOTSTRAP1_ZIP, this.path);
+                }
+
+                createItemMenu(modelDesign, fileNameAppBlade);
+
+                out.setResultProcess(ResultProcess.SUCESS, TEMPLATES_CREATED_SUCCESSFULLY);
+            }
+
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            out.setResultProcess(ResultProcess.ERROR, "Error, " + ex.getMessage());
+        }
+        return out;
+    }
+
+    private String getFileNameAppBlade() {
+        return this.path + PATH_RESOURCES + File.separator + PATH_VIEW + File.separator + "app.blade.php" ;
+    }
+
+    private String getFileNameTemplate(String resourceName, String template) {
+        String controllerPath = this.path + PATH_RESOURCES + File.separator + PATH_VIEW + File.separator + resourceName + File.separator ;
+        return controllerPath + template;
+    }
+
+    private String getMessageComponentLaravelCollective() {
+        StringBuilder sb = new StringBuilder("Please install component Forms & HTML in https://laravelcollective.com or follow the below steps before to continue:");
+        sb.append(System.lineSeparator());
+        sb.append(System.lineSeparator());
+        sb.append("Step 1 - Run this command:");
+        sb.append(System.lineSeparator());
+        sb.append(System.lineSeparator());
+        sb.append("\tcomposer require \"laravelcollective/html\"");
+        sb.append(System.lineSeparator());
+        sb.append(System.lineSeparator());
+        sb.append("Step 2 - Open config/app.php and add this line to service providers array:");
+        sb.append(System.lineSeparator());
+        sb.append(System.lineSeparator());
+        sb.append("\tCollective\\Html\\HtmlServiceProvider::class,");
+        sb.append(System.lineSeparator());
+        sb.append(System.lineSeparator());
+        sb.append("Step 3 - Next, add following line of code to aliases array.");
+        sb.append(System.lineSeparator());
+        sb.append(System.lineSeparator());
+        sb.append("\t'Form' => Collective\\Html\\FormFacade::class,");
+        sb.append(System.lineSeparator());
+        sb.append(System.lineSeparator());
+        sb.append("\t'Html' => Collective\\Html\\HtmlFacade::class,");
+        return sb.toString();
+    }
+
     private void createResourceRoute(ModelDesign modelDesign, Boolean resource) throws Exception {
         String fileName = getFileNameResourceRoute(resource);
         String routesFileContent = readFile(fileName);
@@ -330,6 +433,25 @@ public class Recipe implements IFCook {
         }
     }
 
+    private void createItemMenu(ModelDesign modelDesign, String fileNameAppBlade) throws Exception {
+        String menuContent = readFile(fileNameAppBlade);
+        Pattern p = Pattern.compile(REGEX_EXTRACT_ITEM_MENU);
+        Matcher m = p.matcher(menuContent);
+        if (m.find()) {
+            String route = "url('" + modelDesign.getResourceName() + "')";
+            if(!menuContent.contains(route)) {
+                String injectItemMenuSection = m.group(1) + m.group(2);
+                FreemarkerWrapper.getInstance().addVar("padLeft", m.group(1));
+                FreemarkerWrapper.getInstance().addVar("route", route);
+                FreemarkerWrapper.getInstance().addVar("humanizeName", modelDesign.getModelNameHumanize());
+                String contentItemMenu = FreemarkerWrapper.getInstance().parseTemplate("item-menu.ftl");
+                menuContent = menuContent.replace(injectItemMenuSection, contentItemMenu);
+                FileUtil.saveToPath(fileNameAppBlade, menuContent);
+                updateHistory(UPDATED, fileNameAppBlade);
+            }
+        }
+    }
+
     private void printInfoRoutes(ModelDesign modelDesign) {
         PrintUtilPlugin.printLineGreen("Creating RESTful Routes:");
         PrintUtilPlugin.printLineYellow("GET|HEAD  | api/"+modelDesign.getResourceName()+"               | "+modelDesign.getControllerName()+"@index");
@@ -341,14 +463,18 @@ public class Recipe implements IFCook {
         PrintUtilPlugin.printLineYellow("GET|HEAD  | api/"+modelDesign.getResourceName()+"/{id}/edit     | "+modelDesign.getControllerName()+"@edit");
     }
 
-    private Boolean checkFileExists(String fileName) {
+    private Boolean checkConfirmFileExists(String fileName) {
         Boolean generateFile = true;
-        if(new File(fileName).exists()){
+        if(checkFileExists(fileName)){
             String[] simpleName = fileName.split(ESCAPE + File.separator);
-            PrintUtilPlugin.printLineYellowGreenYellow(THE_FILENAME, simpleName[simpleName.length-1], ALREADY_EXISTS_REPLACE_THE_EXISTING_FILE_Y_N);
+            PrintUtilPlugin.printLineYellowGreenYellow(THE_FILENAME, simpleName[simpleName.length - 1], ALREADY_EXISTS_REPLACE_THE_EXISTING_FILE_Y_N);
             generateFile = this.inputConfirm(N);
         }
         return generateFile;
+    }
+
+    private boolean checkFileExists(String fileName) {
+        return FileUtil.fileExist(fileName);
     }
 
     private void configureInflector() {
@@ -434,9 +560,16 @@ public class Recipe implements IFCook {
     }
 
     private ModelDesign getModelDesign(String tableName) throws Exception {
-        ModelDesign modelDesign = new ModelDesign(getModelName(tableName),"Teste");
+        ModelDesign modelDesign = new ModelDesign(getModelName(tableName));
         modelDesign.setAttributeList(getAttributeControllerList(tableName));
         String modelContent = readFile(getFileNameModelByTableName(tableName));
+        Matcher mDisplayField = Pattern.compile(REGEX_EXTRACT_DISPLAY_FIELD).matcher(modelContent);
+        String displayField = "id";
+        if(mDisplayField.find()){
+            displayField = mDisplayField.group(1);
+        }
+        modelDesign.setDisplayField(displayField);
+
         Pattern p = Pattern.compile(REGEX_EXTRACT_RELATIONSHIPS);
         Matcher m = p.matcher(modelContent);
         while (m.find()) {
@@ -444,26 +577,34 @@ public class Recipe implements IFCook {
             String relationType = m.group(3);
             String simpleNameModel = m.group(5);
 
-            String modelContentAssociation = readFile(getFileNameModelByModelName(simpleNameModel));
-
-            Pattern p2 = Pattern.compile(REGEX_EXTRACT_PRIMARYKEY);
-            Matcher m2 = p2.matcher(modelContentAssociation);
             String primaryKey = "id";
-            if(m2.find()){
-                primaryKey = m2.group(1);
+            String fileNameModelrelation = getFileNameModelByModelName(simpleNameModel);
+            if(FileUtil.fileExist(fileNameModelrelation)) {
+                String modelContentAssociation = readFile(fileNameModelrelation);
+                Pattern p2 = Pattern.compile(REGEX_EXTRACT_PRIMARYKEY);
+                Matcher m2 = p2.matcher(modelContentAssociation);
+                if (m2.find()) {
+                    primaryKey = m2.group(1);
+                }
+            }
+
+            mDisplayField = Pattern.compile(REGEX_EXTRACT_DISPLAY_FIELD).matcher(modelContent);
+            displayField = "id";
+            if(mDisplayField.find()){
+                displayField = mDisplayField.group(1);
             }
 
             Attribute attributePrimaryKey = new Attribute(primaryKey);
             attributePrimaryKey.setPrimaryKey(Boolean.TRUE);
 
             if(BELONGS_TO.equals(relationType)){
-                modelDesign.getManyToOneList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey));
+                modelDesign.getManyToOneList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey, displayField));
             }else if(BELONGS_TO_MANY.equals(relationType)){
-                modelDesign.getManyToManyList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey));
+                modelDesign.getManyToManyList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey, displayField));
             }else if(HAS_ONE.equals(relationType)){
-                modelDesign.getOneToOneList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey));
+                modelDesign.getOneToOneList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey, displayField));
             }else if(HAS_MANY.equals(relationType)){
-                modelDesign.getOneToManyList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey));
+                modelDesign.getOneToManyList().add(new ModelDesign(simpleNameModel, attributeName, attributePrimaryKey, displayField));
             }else{
                 continue;
             }
@@ -737,6 +878,14 @@ public class Recipe implements IFCook {
         } else {
             return routesPath + "web.php";
         }
+    }
+
+    public String getFileNameLaravelCollective() {
+        return this.path + PATH_VENDOR + File.separator + PATH_LARAVEL_COLLECTIVE + File.separator + PATH_HTML + File.separator + "composer.json";
+    }
+
+    public String getFileNameAppConfig() {
+        return this.path + PATH_CONFIG + File.separator + "app.php";
     }
 
     private void updateHistory(String action, String file) {

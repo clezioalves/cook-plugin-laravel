@@ -9,6 +9,8 @@ public class Helper {
 
     private Inflector inflector;
 
+    private String lang;
+
     private Helper(){}
 
     public static Helper getInstance() {
@@ -20,6 +22,11 @@ public class Helper {
 
     public void configureInflector(String lang){
         this.inflector = new Inflector(lang);
+        this.lang = lang;
+    }
+
+    public String getLang() {
+        return lang;
     }
 
     public String modelize(String input) {
