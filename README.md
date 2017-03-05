@@ -10,22 +10,22 @@
 ```
 cook install laravel
 ```
-para instala o plugin,
+para instalar o plugin,
 ```
 cook laravel model
 ```
-para criaçao dos models,
+para criar os models,
 ```
 cook laravel controller-resource
 ```
-para criaçao dos controllers RestFul,
+para criar os controllers RestFul,
 ```
 cook laravel controller
 ```
-para criaçao dos controllers e 
+para criar os controllers e 
 ```
 cook laravel template
 ```
-para criaçao das views.
+para criar as views.
 
 >Observação: Para criação dos controllers é necessário fazer a escolha entre controller e controller-resource
