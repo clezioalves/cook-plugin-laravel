@@ -31,7 +31,7 @@
             </#list>
             <#list modelDesign.getManyToOneList() as modelRelation>
             <div class="form-group">
-                {!! Form::label('${modelRelation.getModelNameVariable()}', '${modelRelation.getModelNameHumanize()}') !!}
+                {!! Form::label('${modelRelation.getModelNameVariable()}', '${modelRelation.getModelNameHumanizeSingularize()}') !!}
                 {!! Form::select('${modelRelation.getModelNameVariable()}',$${modelRelation.getModelNameVariableList()},null,['placeholder' => 'Selecione','class'=>'form-control']); !!}
             </div>
             </#list>
