@@ -6,7 +6,12 @@
 
 ----
 ## Como usar?
->Com o [Cook](https://github.com/itakenami/cook) instalado e configurado, é possível utilizar os comandos
+>Baixe o [Cook](https://github.com/itakenami/cook) e faça a criação da variável de ambiente de sistema "COOK_HOME" apontando para pasta "bin" do COOK:
+Ex: COOK_HOME = C:\dev\cook\bin
+>Complemente a variável de sistema Path com a variável criada adicionando %COOK_HOME% no final das variáveis existentes.
+
+>Com o [Cook](https://github.com/itakenami/cook) instalado e configurado, é possível utilizar os comandos:
+
 ```
 cook install laravel
 ```
